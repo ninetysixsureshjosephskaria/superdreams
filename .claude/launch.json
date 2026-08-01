@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "bcc",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@superdreams/bcc", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "member",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@superdreams/member", "dev"],
+      "port": 5174
+    }
+  ]
+}

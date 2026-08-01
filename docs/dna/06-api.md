@@ -144,32 +144,46 @@ Soft delete where applicable.
 
 # Response Format
 
-Every successful response should follow a consistent envelope.
+Every response follows one canonical envelope. This is the single source of
+truth for the platform response contract; every service and client depends on it.
+
+Successful responses:
 
 ```json
 {
   "success": true,
-  "message": "Operation completed successfully.",
   "data": {},
   "meta": {}
 }
 ```
+
+- `data` is always present on success.
+- `message` (optional) — human-readable summary.
+- `meta` (optional) — pagination or other contextual metadata for collections.
 
 Error responses:
 
 ```json
 {
   "success": false,
-  "message": "Validation failed.",
-  "errors": [
-    {
-      "field": "email",
-      "message": "Invalid email address."
-    }
-  ],
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Validation failed.",
+    "details": [
+      {
+        "field": "email",
+        "message": "Invalid email address."
+      }
+    ]
+  },
   "traceId": "..."
 }
 ```
+
+- `error.code` — stable, machine-readable error code.
+- `error.message` — human-readable summary.
+- `error.details` (optional) — field-level errors (e.g. validation).
+- `traceId` — request correlation id, for cross-referencing logs.
 
 ---
 

@@ -1,0 +1,20 @@
+# Keep Docker build context small and reproducible.
+**/node_modules
+**/dist
+**/build
+**/.turbo
+**/coverage
+**/*.tsbuildinfo
+
+.git
+.github
+.husky
+docs
+
+**/*.log
+**/.DS_Store
+
+# Never send local env files into the build context.
+.env
+.env.*
+!.env.example

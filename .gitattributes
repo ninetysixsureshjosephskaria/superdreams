@@ -1,0 +1,63 @@
+# Super Dreams — Git attributes
+#
+# Enforce consistent, cross-platform line endings. Text files are normalized to
+# LF in the repository and checked out with LF on every platform, matching the
+# platform standards defined in .editorconfig and .prettierrc.
+
+# Default: treat all files as text and normalize to LF on commit & checkout.
+* text=auto eol=lf
+
+# Explicit text formats (LF).
+*.ts       text eol=lf
+*.tsx      text eol=lf
+*.mts      text eol=lf
+*.cts      text eol=lf
+*.js       text eol=lf
+*.jsx      text eol=lf
+*.cjs      text eol=lf
+*.mjs      text eol=lf
+*.json     text eol=lf
+*.jsonc    text eol=lf
+*.md       text eol=lf
+*.yml      text eol=lf
+*.yaml     text eol=lf
+*.css      text eol=lf
+*.scss     text eol=lf
+*.html     text eol=lf
+*.svg      text eol=lf
+*.sql      text eol=lf
+*.sh       text eol=lf
+*.env      text eol=lf
+.editorconfig    text eol=lf
+.gitattributes   text eol=lf
+.gitignore       text eol=lf
+.nvmrc           text eol=lf
+.prettierrc      text eol=lf
+.prettierignore  text eol=lf
+Dockerfile       text eol=lf
+*.dockerfile     text eol=lf
+
+# Binary formats — never normalized or diffed as text.
+*.png      binary
+*.jpg      binary
+*.jpeg     binary
+*.gif      binary
+*.ico      binary
+*.webp     binary
+*.avif     binary
+*.woff     binary
+*.woff2    binary
+*.ttf      binary
+*.eot      binary
+*.otf      binary
+*.pdf      binary
+*.zip      binary
+*.gz       binary
+*.tar      binary
+*.mp4      binary
+*.webm     binary
+*.mp3      binary
+*.wav      binary
+
+# Generated lockfile — treated as text (LF) but excluded from diffs.
+pnpm-lock.yaml   text eol=lf -diff

@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Lint · Typecheck · Test · Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prettier (check)
+        run: pnpm format:check
+
+      - name: Lint (no warnings allowed)
+        run: pnpm exec turbo run lint -- --max-warnings=0
+
+      - name: Typecheck
+        run: pnpm exec turbo run typecheck
+
+      - name: Test
+        run: pnpm exec turbo run test
+
+      - name: Build
+        run: pnpm exec turbo run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            backend/api/dist
+            apps/bcc/dist
+            apps/member/dist
+          if-no-files-found: error
+          retention-days: 7
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Fail only on high/critical advisories; report others without blocking.
+      - name: Audit (high+)
+        run: pnpm audit --prod --audit-level high
+
+  docker:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infrastructure/docker/api/Dockerfile
+          push: false
+          tags: superdreams/api:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build BCC image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infrastructure/docker/bcc/Dockerfile
+          push: false
+          tags: superdreams/bcc:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Member image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infrastructure/docker/member/Dockerfile
+          push: false
+          tags: superdreams/member:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

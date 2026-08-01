@@ -329,14 +329,16 @@ Security is mandatory, not optional.
 
 # API Responses
 
-Use consistent response structures.
+Use one canonical response envelope across the entire platform. It is defined
+authoritatively in `docs/dna/06-api.md`; the shapes below must match it exactly.
 
 Successful responses:
 
 ```json
 {
   "success": true,
-  "data": {}
+  "data": {},
+  "meta": {}
 }
 ```
 
@@ -347,10 +349,15 @@ Error responses:
   "success": false,
   "error": {
     "code": "VALIDATION_ERROR",
-    "message": "Validation failed."
-  }
+    "message": "Validation failed.",
+    "details": [{ "field": "email", "message": "Invalid email address." }]
+  },
+  "traceId": "..."
 }
 ```
+
+`message` (success) and `meta` are optional; `error.details` and `traceId` are
+included where applicable (e.g. validation failures and request correlation).
 
 ---
 

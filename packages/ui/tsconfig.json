@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "types": ["node", "@testing-library/jest-dom"],
+    "exactOptionalPropertyTypes": false,
+    "noEmit": true
+  },
+  "include": ["src", "vitest.config.ts", "vitest.setup.ts"],
+  "exclude": ["node_modules", "dist", "coverage", ".turbo"]
+}

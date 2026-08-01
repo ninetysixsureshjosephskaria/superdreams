@@ -1,0 +1,15 @@
+# Super Dreams — Prometheus scrape configuration (scaffolding).
+#
+# Not wired into the default stack yet. Enable together with the observability
+# stack (Prometheus / Grafana / Loki) once a metrics endpoint is provisioned.
+# Dashboards are intentionally NOT configured in this phase.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: superdreams-api
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['api:3000']

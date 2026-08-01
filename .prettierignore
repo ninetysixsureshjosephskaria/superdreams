@@ -1,0 +1,20 @@
+# Dependencies & build artifacts
+node_modules
+dist
+build
+coverage
+.turbo
+.cache
+
+# Lockfiles & generated content
+pnpm-lock.yaml
+CHANGELOG.md
+
+# Drizzle-generated migration SQL + snapshots (tool-formatted, not hand-edited)
+backend/api/drizzle
+
+# Authored documentation is formatted by hand
+docs
+
+# Tooling
+.husky/_

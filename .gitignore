@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Test & coverage
+coverage/
+
+# Turborepo
+.turbo/
+
+# Caches
+.cache/
+.eslintcache
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# Environment — commit templates only; never real secrets.
+.env
+.env.*
+!.env.example
+!.env.development
+!.env.production.example
+
+# Editor
+.vscode/settings.json
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary
+*.tmp
+*~
+
+# Database backups (local dumps only)
+infrastructure/backups/*.sql.gz

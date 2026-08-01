@@ -1,0 +1,71 @@
+# Super Dreams — local development infrastructure only.
+#
+# Runs just PostgreSQL + Redis (plus Adminer for DB inspection) so you can run
+# the API and frontends on the host with fast HMR:
+#
+#   docker compose -f docker-compose.dev.yml --env-file .env.development up -d
+#   pnpm dev
+#
+# The full containerized stack lives in docker-compose.yml.
+
+name: superdreams-dev
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-superdreams}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-superdreams}
+      POSTGRES_DB: ${POSTGRES_DB:-superdreams}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [superdreams-dev]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command:
+      [
+        'redis-server',
+        '/usr/local/etc/redis/redis.conf',
+        '--requirepass',
+        '${REDIS_PASSWORD:-superdreams}',
+      ]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-superdreams}
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redisdata_dev:/data
+      - ./infrastructure/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [superdreams-dev]
+
+  adminer:
+    image: adminer:5
+    restart: unless-stopped
+    ports:
+      - '${ADMINER_PORT:-8090}:8080'
+    depends_on:
+      - postgres
+    networks: [superdreams-dev]
+
+networks:
+  superdreams-dev:
+    driver: bridge
+
+volumes:
+  pgdata_dev:
+  redisdata_dev:
