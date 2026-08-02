@@ -31,6 +31,10 @@ yarn-debug.log*
 !.env.example
 !.env.development
 !.env.production.example
+# Frontend production URLs are public (Vite bakes VITE_* into the client bundle),
+# so the SPAs' .env.production is committed for deterministic production builds.
+!apps/member/.env.production
+!apps/bcc/.env.production
 
 # Editor
 .vscode/settings.json
