@@ -148,35 +148,49 @@ These also run via Turborepo from the root (`pnpm build`, `pnpm test`, etc.).
 
 ## Deployment (Railway)
 
-Railway builds and runs the API from [`railway.json`](./railway.json). Critically,
-the deploy **applies all pending Drizzle migrations before the server starts** so
-the schema is always current — a fresh database bootstraps from migration `0000`,
-and an existing one only gets what it is missing. The start command is:
+The API deploys as a **multi-stage Docker image** ([`Dockerfile`](./Dockerfile)),
+selected via [`railway.json`](./railway.json) (`"builder": "DOCKERFILE"`,
+`"dockerfilePath": "backend/api/Dockerfile"`). This is deliberate: it does **not**
+rely on Nixpacks/Railpack auto install/build sequencing, so builds are fully
+deterministic. **The Docker build context must be the repository (pnpm workspace)
+root** so the lockfile and all package manifests are available.
+
+The image has three stages:
+
+| Stage     | What it does                                                                 |
+| --------- | --------------------------------------------------------------------------- |
+| `builder` | Install **all** deps (incl. devDependencies) and compile with tsup.         |
+| _(prune)_ | `pnpm deploy --prod` → self-contained, **production-only** bundle.           |
+| `runtime` | Copy only that bundle (`dist/`, `drizzle/`, `package.json`, prod `node_modules`). |
+
+The container `CMD` preserves the release behavior — **apply migrations, then
+seed, then start** — running compiled JS directly (no pnpm/workspace at runtime):
 
 ```
-pnpm --filter @superdreams/api release && pnpm --filter @superdreams/api start
+node dist/migrate.js && node dist/seed.js && exec node dist/server.js
 ```
 
-`release` runs `db:migrate:prod` then `db:seed:prod`, both compiled to `dist/`
-(runtime deps only — no `drizzle-kit`/`tsx` needed in production):
+- **Idempotent:** Drizzle records applied migrations in `drizzle.__drizzle_migrations`
+  and skips them; seeds skip existing rows. Safe on every deploy. A fresh database
+  bootstraps from migration `0000` plus the RBAC catalog and default admin.
+- **Fails safe:** if migrate/seed fails (e.g. the DB is unreachable) the `&&` chain
+  stops and the server never boots against an un-migrated schema; Railway retries
+  per the restart policy.
+- **Runtime is production-only:** build tools (tsup, typescript) never reach the
+  runtime image.
 
-| Command             | Runs                | Purpose                                                    |
-| ------------------- | ------------------- | --------------------------------------------------------- |
-| `db:migrate:prod`   | `node dist/migrate.js` | Apply pending migrations from `drizzle/`. Idempotent.  |
-| `db:seed:prod`      | `node dist/seed.js`    | Seed the RBAC catalog + default admin. Idempotent.     |
-| `release`           | both, in order      | The Railway pre-start step.                                |
-
-Both operations are **idempotent**: Drizzle records applied migrations in
-`drizzle.__drizzle_migrations` and skips them; the seeds skip rows that already
-exist. Running them on every deploy is safe. If `release` fails (e.g. the database
-is unreachable) the server does not start and Railway retries per the restart
-policy — the API never boots against an un-migrated schema.
-
-To fix an already-broken production database once, run the same step manually
-against its `DATABASE_URL` (from local, after `pnpm --filter @superdreams/api build`):
+The individual steps also exist as scripts for manual/one-off use — `db:migrate:prod`
+(`node dist/migrate.js`), `db:seed:prod` (`node dist/seed.js`), and `release` (both):
 
 ```
 DATABASE_URL="<railway-postgres-url>" pnpm --filter @superdreams/api release
+```
+
+Build and run the production image locally:
+
+```
+docker build -f backend/api/Dockerfile -t superdreams-api .
+docker run --rm -p 3000:3000 -e DATABASE_URL=... -e REDIS_URL=... -e JWT_SECRET=... superdreams-api
 ```
 
 ---
