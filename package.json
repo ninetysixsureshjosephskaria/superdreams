@@ -19,7 +19,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "clean": "turbo run clean",
-    "prepare": "node .husky/install.mjs"
+    "prepare": "node -e \"try{const h=require('husky');(h.default||h)()}catch(e){}\""
   },
   "devDependencies": {
     "@commitlint/cli": "^19.6.1",
