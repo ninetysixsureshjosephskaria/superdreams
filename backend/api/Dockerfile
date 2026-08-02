@@ -33,10 +33,9 @@ WORKDIR /repo
 COPY . .
 
 # Install every dependency (including devDependencies such as tsup) regardless
-# of NODE_ENV, using a cached pnpm store for fast, repeatable builds.
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-    pnpm config set store-dir /pnpm/store && \
-    pnpm install --frozen-lockfile
+# of NODE_ENV. (No BuildKit cache mount here — Railway's builder rejects
+# un-namespaced cache ids; a plain install is portable across builders.)
+RUN pnpm install --frozen-lockfile
 
 # Compile the API (tsup -> backend/api/dist: server.js, migrate.js, seed.js).
 RUN pnpm --filter @superdreams/api build
