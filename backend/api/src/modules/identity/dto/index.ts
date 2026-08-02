@@ -22,6 +22,7 @@ export interface UserResponse {
   displayName: string | null;
   status: UserStatus;
   emailVerifiedAt: Date | null;
+  mustChangePassword: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

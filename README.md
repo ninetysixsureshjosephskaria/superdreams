@@ -173,6 +173,79 @@ type-checking plus tests on push.
 
 ---
 
+## Authentication
+
+Both frontends use real JWT authentication against the API (`/api/v1/auth/*`).
+
+**Login URLs**
+
+- Member Portal: `/login`
+- Business Control Center: `/login`
+
+**Default administrator** (created by the `production-admin` seed in every
+environment):
+
+| Field    | Value                     |
+| -------- | ------------------------- |
+| Email    | `admin@superdreams.com`   |
+| Password | `ChangeMe123!`            |
+
+The admin account is flagged `mustChangePassword`, so the first sign-in is
+redirected to **Change password**; the seeded credential must be rotated before
+the console can be used. Sign in to the BCC with this account.
+
+**Flow**
+
+1. `POST /api/v1/auth/login` returns a short-lived JWT **access token** (sent as
+   `Authorization: Bearer`) and a rotating **refresh token** (returned in the
+   body and also set as an httpOnly cookie).
+2. The access token is held in memory; the refresh token is persisted to
+   `localStorage` (when "Remember me" is checked) or `sessionStorage` otherwise.
+3. On a `401`, the API client transparently calls `POST /api/v1/auth/refresh`
+   (with refresh-token **rotation** and reuse/theft detection), retries the
+   request, and on failure clears the session and redirects to `/login`.
+4. On load, a persisted refresh token restores the session (`refresh` → `me`).
+5. `POST /api/v1/auth/logout` revokes the server session and clears local tokens.
+
+Passwords are hashed with Argon2id. The BCC additionally loads the caller's
+effective RBAC permissions (`GET /api/v1/users/:id/permissions`) to gate routes.
+
+**Environment variables**
+
+Backend (API service):
+
+| Variable                     | Purpose                                             | Default                      |
+| ---------------------------- | --------------------------------------------------- | ---------------------------- |
+| `DATABASE_URL`               | PostgreSQL connection string                        | local dev default            |
+| `REDIS_URL`                  | Redis connection string                             | `redis://localhost:6379`     |
+| `JWT_SECRET`                 | **Required in production** — signs access tokens     | dev placeholder              |
+| `JWT_ACCESS_EXPIRES_IN`      | Access-token TTL                                     | `15m`                        |
+| `JWT_REFRESH_EXPIRES_IN`     | Refresh-token TTL                                    | `7d`                         |
+| `AUTH_COOKIE_NAME`           | Refresh-cookie name                                 | `sd_refresh`                 |
+| `AUTH_COOKIE_SECURE`         | `Secure` flag on the refresh cookie                 | on in production             |
+| `AUTH_COOKIE_SAMESITE`       | `SameSite` policy for the refresh cookie            | `lax`                        |
+| `CORS_ORIGINS`               | Allowed origins (set to the two frontend URLs)      | `*`                          |
+
+Frontends (Member + BCC), build-time:
+
+| Variable             | Purpose                                  |
+| -------------------- | ---------------------------------------- |
+| `VITE_API_BASE_URL`  | Public URL of the deployed API service   |
+
+> The former `VITE_DEV_ACCESS_TOKEN` static-token shim has been removed — the
+> apps now authenticate through the login flow.
+
+**Railway deployment notes**
+
+- Apply migrations and seeds on the API service after deploy:
+  `pnpm --filter @superdreams/api db:migrate && pnpm --filter @superdreams/api db:seed`.
+  The `production-admin` seed is idempotent and safe to run repeatedly.
+- Set `JWT_SECRET` (strong, ≥16 chars) and `CORS_ORIGINS` to the exact Member and
+  BCC URLs on the API service.
+- Set `VITE_API_BASE_URL` (no trailing slash) on each frontend service **before**
+  its build, then redeploy.
+- Rotate the seeded admin password on first login.
+
 ## Documentation
 
 The complete documentation set lives in [`docs/`](docs). Start with

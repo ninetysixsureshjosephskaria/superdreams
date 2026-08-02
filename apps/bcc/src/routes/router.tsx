@@ -1,10 +1,16 @@
-import { lazy } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 
 import { ROUTES } from '@/constants';
 import { ProtectedRoute } from '@/guards';
 import { AppLayout, PublicLayout } from '@/layouts';
 import { RouteErrorPage } from '@/pages/error/RouteErrorPage';
+import { LoadingScreen } from '@superdreams/ui';
+
+/** Wraps a lazily-loaded standalone page (one with no layout) in a Suspense boundary. */
+function lazyPage(node: ReactNode): ReactNode {
+  return <Suspense fallback={<LoadingScreen />}>{node}</Suspense>;
+}
 
 // Pages are code-split; layouts render a Suspense fallback while they load.
 const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'));
@@ -56,6 +62,8 @@ const DreamStoreProductDetailPage = lazy(
 const DreamStoreCategoriesPage = lazy(() => import('@/features/dream-store/pages/CategoriesPage'));
 const DreamStoreOrdersPage = lazy(() => import('@/features/dream-store/pages/OrdersPage'));
 const DreamStoreInventoryPage = lazy(() => import('@/features/dream-store/pages/InventoryPage'));
+const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));
+const ChangePasswordPage = lazy(() => import('@/features/auth/pages/ChangePasswordPage'));
 const UnauthorizedPage = lazy(() => import('@/pages/errors/UnauthorizedPage'));
 const ForbiddenPage = lazy(() => import('@/pages/errors/ForbiddenPage'));
 const ServerErrorPage = lazy(() => import('@/pages/errors/ServerErrorPage'));
@@ -333,6 +341,16 @@ export const router = createBrowserRouter([
         ),
       },
     ],
+  },
+  {
+    path: ROUTES.login.replace(/^\//, ''),
+    element: lazyPage(<LoginPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: ROUTES.changePassword.replace(/^\//, ''),
+    element: <ProtectedRoute>{lazyPage(<ChangePasswordPage />)}</ProtectedRoute>,
+    errorElement: <RouteErrorPage />,
   },
   {
     element: <PublicLayout />,

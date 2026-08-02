@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 
-import { MOCK_PERMISSIONS, permissionGranted } from '@/mocks';
+import { useSessionStore } from '@/store';
 
 export interface UsePermissionsResult {
   permissions: readonly string[];
@@ -8,14 +8,14 @@ export interface UsePermissionsResult {
 }
 
 /**
- * Exposes the caller's effective permissions. **Mock in this phase** (see
- * `mocks/permissions`); the authentication/RBAC phase swaps the source for
- * server-resolved permissions without changing consumers.
+ * The caller's effective permissions, resolved server-side (RBAC) after sign-in.
+ * `can(...)` honours the seed-time wildcard `'*'` as well as exact permission
+ * keys, so a super-admin passes every gate.
  */
 export function usePermissions(): UsePermissionsResult {
-  const permissions = MOCK_PERMISSIONS;
+  const permissions = useSessionStore((state) => state.permissions);
   const can = useCallback(
-    (permission: string) => permissionGranted(permissions, permission),
+    (permission: string) => permissions.includes('*') || permissions.includes(permission),
     [permissions],
   );
   return useMemo(() => ({ permissions, can }), [permissions, can]);

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { HelmetProvider } from 'react-helmet-async';
 
+import { AuthProvider } from '@/auth';
 import { AppErrorFallback } from '@superdreams/ui';
 
 import { QueryProvider } from './query-provider';
@@ -20,7 +21,9 @@ export function AppProviders({ children }: AppProvidersProps) {
     <HelmetProvider>
       <ThemeProvider>
         <ErrorBoundary FallbackComponent={AppErrorFallback}>
-          <QueryProvider>{children}</QueryProvider>
+          <QueryProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </QueryProvider>
         </ErrorBoundary>
       </ThemeProvider>
     </HelmetProvider>

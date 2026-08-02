@@ -74,7 +74,10 @@ export class PasswordService {
     await this.assertNotReused(userId, data.newPassword, userRow.passwordHash);
 
     const newHash = await hashPassword(data.newPassword);
-    await this.identity.repositories.users.update(userId, { passwordHash: newHash });
+    await this.identity.repositories.users.update(userId, {
+      passwordHash: newHash,
+      mustChangePassword: false,
+    });
     await this.passwordHistory.record(userId, newHash);
     await this.sessions.revokeAllForUser(userId);
     await this.events.publish({ type: 'PasswordChanged', userId, at: new Date() });

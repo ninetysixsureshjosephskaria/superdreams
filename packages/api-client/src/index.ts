@@ -1,6 +1,18 @@
 export { createApiClient } from './client';
 export type { ApiClientConfig } from './client';
 export { ApiError, normalizeError } from './errors';
+export { createAuthApi } from './auth';
+export type {
+  AuthApi,
+  AuthUser,
+  UserStatus,
+  LoginInput,
+  AuthSession,
+  LoginResult,
+  RefreshResult,
+  ChangePasswordInput,
+  UserPermissions,
+} from './auth';
 export { createMembersApi } from './members';
 export type {
   MembersApi,

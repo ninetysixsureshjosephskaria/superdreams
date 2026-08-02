@@ -5,6 +5,8 @@
 export const ROUTES = {
   home: '/',
   dashboard: '/',
+  login: '/login',
+  changePassword: '/change-password',
   members: '/members',
   wallet: '/wallet',
   rewards: '/rewards',

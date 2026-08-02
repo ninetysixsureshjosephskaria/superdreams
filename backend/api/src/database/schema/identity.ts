@@ -53,6 +53,8 @@ export const users = pgTable(
     displayName: text('display_name'),
     status: userStatus('status').notNull().default('PENDING'),
     emailVerifiedAt: timestamp('email_verified_at', { withTimezone: true }),
+    /** Forces a password change on next sign-in (e.g. seeded/admin-reset accounts). */
+    mustChangePassword: boolean('must_change_password').notNull().default(false),
   },
   (table) => [
     uniqueIndex('users_email_uq').on(table.email),

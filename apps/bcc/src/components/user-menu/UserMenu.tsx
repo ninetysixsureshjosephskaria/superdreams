@@ -1,20 +1,17 @@
 import { useNavigate } from 'react-router-dom';
 
+import { useAuth } from '@/auth';
 import { ROUTES } from '@/constants';
-import { useNotificationStore, useSessionStore } from '@/store';
+import { useSessionStore } from '@/store';
 import { Avatar, DropdownMenu, Icon } from '@superdreams/ui';
 
 const TRIGGER_CLASS =
   'inline-flex items-center gap-2 rounded-md p-1 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
-/**
- * User profile menu. Sign-out is mocked (it clears the mock session and shows a
- * toast) — no real authentication is performed in this phase.
- */
+/** Admin user menu with real sign-out (revokes the server session). */
 export function UserMenu() {
   const user = useSessionStore((state) => state.user);
-  const clear = useSessionStore((state) => state.clear);
-  const notify = useNotificationStore((state) => state.notify);
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   const name = user?.name ?? 'Account';
@@ -53,11 +50,8 @@ export function UserMenu() {
           icon: <Icon name="log-out" size="sm" />,
           destructive: true,
           onSelect: () => {
-            clear();
-            notify({
-              variant: 'info',
-              title: 'Signed out (mock)',
-              description: 'Authentication is not wired in this phase.',
+            void logout().then(() => {
+              navigate(ROUTES.login, { replace: true });
             });
           },
         },

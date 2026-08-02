@@ -1,10 +1,16 @@
-import { lazy } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 
 import { ROUTES } from '@/constants';
 import { ProtectedRoute } from '@/guards';
 import { AppLayout, PublicLayout } from '@/layouts';
 import { RouteErrorPage } from '@/pages/error/RouteErrorPage';
+import { LoadingScreen } from '@superdreams/ui';
+
+/** Wraps a lazily-loaded standalone page (one with no layout) in a Suspense boundary. */
+function lazyPage(node: ReactNode): ReactNode {
+  return <Suspense fallback={<LoadingScreen />}>{node}</Suspense>;
+}
 
 // Pages are code-split; layouts render a Suspense fallback while they load.
 const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'));
@@ -12,6 +18,8 @@ const ProfilePage = lazy(() => import('@/features/profile/pages/ProfilePage'));
 const WalletPage = lazy(() => import('@/features/wallet/pages/WalletPage'));
 const GamesPage = lazy(() => import('@/features/games/pages/GamesPage'));
 const DreamStorePage = lazy(() => import('@/features/dream-store/pages/DreamStorePage'));
+const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));
+const ChangePasswordPage = lazy(() => import('@/features/auth/pages/ChangePasswordPage'));
 const UnauthorizedPage = lazy(() => import('@/pages/errors/UnauthorizedPage'));
 const ForbiddenPage = lazy(() => import('@/pages/errors/ForbiddenPage'));
 const ServerErrorPage = lazy(() => import('@/pages/errors/ServerErrorPage'));
@@ -44,6 +52,16 @@ export const router = createBrowserRouter([
       { path: ROUTES.wallet.replace(/^\//, ''), element: <WalletPage /> },
       { path: ROUTES.profile.replace(/^\//, ''), element: <ProfilePage /> },
     ],
+  },
+  {
+    path: ROUTES.login.replace(/^\//, ''),
+    element: lazyPage(<LoginPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: ROUTES.changePassword.replace(/^\//, ''),
+    element: <ProtectedRoute>{lazyPage(<ChangePasswordPage />)}</ProtectedRoute>,
+    errorElement: <RouteErrorPage />,
   },
   {
     element: <PublicLayout />,

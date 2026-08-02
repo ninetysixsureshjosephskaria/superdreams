@@ -38,6 +38,7 @@ export function toUserResponse(row: UserRow): UserResponse {
     displayName: row.displayName,
     status: row.status,
     emailVerifiedAt: row.emailVerifiedAt,
+    mustChangePassword: row.mustChangePassword,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

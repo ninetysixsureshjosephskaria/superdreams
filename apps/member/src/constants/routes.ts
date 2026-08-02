@@ -9,6 +9,8 @@
 export const ROUTES = {
   home: '/',
   dashboard: '/',
+  login: '/login',
+  changePassword: '/change-password',
   games: '/games',
   dreamStore: '/dream-store',
   wallet: '/wallet',

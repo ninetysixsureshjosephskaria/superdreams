@@ -6,6 +6,7 @@ import '@/modules/rbac/seed';
 
 import { runSeeds } from './index';
 // Registered after the runner import to avoid a circular import at module load.
+import './production-admin';
 import './demo';
 
 /**
