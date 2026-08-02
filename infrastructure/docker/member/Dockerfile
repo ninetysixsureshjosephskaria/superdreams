@@ -36,8 +36,12 @@ RUN pnpm --filter @superdreams/member build
 
 # --- Runtime: static files served by unprivileged Nginx --------------------
 FROM nginxinc/nginx-unprivileged:1.27-alpine AS runner
-COPY infrastructure/docker/member/nginx.conf /etc/nginx/conf.d/default.conf
+# PORT is injected by the platform (Railway) at runtime; default to 8080 so the
+# image also works under docker-compose. The base image's entrypoint runs
+# envsubst on templates, rendering ${PORT} into the active server config.
+ENV PORT=8080
+COPY infrastructure/docker/member/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /repo/apps/member/dist /usr/share/nginx/html
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -q --spider http://127.0.0.1:8080/healthz || exit 1
+  CMD wget -q --spider "http://127.0.0.1:${PORT}/healthz" || exit 1

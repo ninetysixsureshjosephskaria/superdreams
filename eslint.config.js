@@ -95,13 +95,29 @@ export default tseslint.config(
     },
   },
 
-  // Plain JavaScript config/tooling files (not type-checked).
+  // Plain JavaScript config/tooling and Node deploy scripts (not type-checked).
   {
     files: ['**/*.{js,cjs,mjs}'],
     extends: [js.configs.recommended],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
+      globals: {
+        // Node runtime globals used by config files and deploy scripts.
+        process: 'readonly',
+        console: 'readonly',
+        Buffer: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        module: 'writable',
+        require: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+      },
     },
     rules: {
       'no-console': 'off',
