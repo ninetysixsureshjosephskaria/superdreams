@@ -58,8 +58,6 @@ COPY --from=builder --chown=node:node /prod/node_modules ./node_modules
 COPY --from=builder --chown=node:node /prod/dist ./dist
 COPY --from=builder --chown=node:node /prod/drizzle ./drizzle
 
-# (dist includes seed-members.js — the one-time member bootstrap run at startup.)
-
 # Drop privileges.
 USER node
 
@@ -71,4 +69,4 @@ EXPOSE 3000
 # (both idempotent) — then start the server. `exec` hands PID 1 to the server so
 # it receives SIGTERM/SIGINT for graceful shutdown. Runs node directly: no pnpm,
 # no workspace resolution, no builder sequencing at runtime.
-CMD ["sh", "-c", "node dist/migrate.js && node dist/seed.js && node dist/seed-members.js && exec node dist/server.js"]
+CMD ["sh", "-c", "node dist/migrate.js && node dist/seed.js && exec node dist/server.js"]

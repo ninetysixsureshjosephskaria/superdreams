@@ -14,7 +14,6 @@ export default defineConfig({
     server: 'src/server.ts',
     migrate: 'src/migrate.ts',
     seed: 'src/database/seed/seed.ts',
-    'seed-members': 'src/seed-members.ts',
   },
   format: ['esm'],
   target: 'node24',
