@@ -7,7 +7,8 @@
  */
 
 :root {
-  --background: 0 0% 100%;
+  /* Very light neutral canvas (#F7F9FC); cards sit on pure white above it. */
+  --background: 216 45% 98%;
   --foreground: 222 47% 11%;
 
   --card: 0 0% 100%;
@@ -40,18 +41,27 @@
   --info: 199 89% 48%;
   --info-foreground: 210 40% 98%;
 
-  --border: 214 32% 91%;
+  /* Subtle hairline borders — never dark. */
+  --border: 214 32% 93%;
   --input: 214 32% 91%;
   --ring: 221 83% 53%;
 
-  --radius: 0.5rem;
+  --radius: 0.875rem;
+
+  /* Chart / status accent palette (blue, indigo, purple, green, amber, coral). */
+  --chart-1: 221 83% 53%;
+  --chart-2: 239 84% 67%;
+  --chart-3: 271 76% 63%;
+  --chart-4: 152 60% 45%;
+  --chart-5: 38 92% 50%;
+  --chart-6: 8 88% 66%;
 }
 
 .dark {
-  --background: 222 47% 11%;
+  --background: 222 47% 9%;
   --foreground: 210 40% 98%;
 
-  --card: 222 47% 13%;
+  --card: 222 47% 12%;
   --card-foreground: 210 40% 98%;
 
   --popover: 222 47% 13%;
@@ -81,7 +91,14 @@
   --info: 199 89% 52%;
   --info-foreground: 222 47% 11%;
 
-  --border: 217 33% 22%;
+  --border: 217 33% 20%;
   --input: 217 33% 22%;
   --ring: 217 91% 60%;
+
+  --chart-1: 217 91% 60%;
+  --chart-2: 239 84% 74%;
+  --chart-3: 271 76% 71%;
+  --chart-4: 152 60% 52%;
+  --chart-5: 38 92% 58%;
+  --chart-6: 8 88% 70%;
 }

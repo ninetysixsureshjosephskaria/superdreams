@@ -65,25 +65,38 @@ export const spacing = {
   '3xl': '4rem',
 } as const;
 
-/** Border radius scale. `sm/md/lg` derive from the themeable `--radius`. */
+/**
+ * Border radius scale. `sm/md/lg` derive from the themeable `--radius`; the
+ * named tokens (`card/dialog/input/button/pill`) encode the premium spec so
+ * components round consistently regardless of the base radius.
+ */
 export const radii = {
   none: '0px',
   sm: 'calc(var(--radius) - 4px)',
   md: 'calc(var(--radius) - 2px)',
   lg: 'var(--radius)',
-  xl: '0.75rem',
-  '2xl': '1rem',
+  xl: '1rem',
+  '2xl': '1.25rem',
+  card: '18px',
+  dialog: '22px',
+  input: '14px',
+  button: '14px',
+  pill: '9999px',
   full: '9999px',
 } as const;
 
-/** Elevation / shadow scale. */
+/**
+ * Elevation / shadow scale — deliberately soft (low-alpha slate) so cards float
+ * above the neutral canvas without harsh edges.
+ */
 export const shadows = {
-  sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-  md: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-  lg: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
-  xl: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
-  card: '0 1px 2px 0 rgb(0 0 0 / 0.05), 0 1px 3px 0 rgb(0 0 0 / 0.08)',
-  overlay: '0 10px 38px -10px rgb(0 0 0 / 0.35)',
+  sm: '0 4px 12px rgba(15, 23, 42, 0.05)',
+  md: '0 12px 32px rgba(15, 23, 42, 0.08)',
+  lg: '0 20px 60px rgba(15, 23, 42, 0.1)',
+  xl: '0 28px 80px rgba(15, 23, 42, 0.12)',
+  card: '0 4px 12px rgba(15, 23, 42, 0.05)',
+  float: '0 12px 32px rgba(15, 23, 42, 0.1)',
+  overlay: '0 20px 60px rgba(15, 23, 42, 0.18)',
 } as const;
 
 /** Named elevation levels (0–5) mapped to the shadow scale. */
@@ -114,7 +127,7 @@ export const zIndex = {
 
 /** Font family stacks. */
 export const fontFamily = {
-  sans: ['Inter', 'system-ui', 'ui-sans-serif', 'sans-serif'],
+  sans: ['Inter Variable', 'Inter', 'SF Pro Display', 'system-ui', 'ui-sans-serif', 'sans-serif'],
   mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
 } as const;
 
@@ -128,6 +141,7 @@ export const fontSize = {
   '2xl': ['1.5rem', '2rem'],
   '3xl': ['1.875rem', '2.25rem'],
   '4xl': ['2.25rem', '2.5rem'],
+  '5xl': ['2.5rem', '2.75rem'],
 } as const;
 
 export const fontWeight = {

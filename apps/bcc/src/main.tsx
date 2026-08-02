@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 
 import { App } from '@/app/App';
 
+import '@fontsource-variable/inter';
 import '@/styles/globals.css';
 
 const container = document.getElementById('root');
