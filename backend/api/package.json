@@ -20,6 +20,7 @@
     "db:migrate:prod": "node dist/migrate.js",
     "db:seed": "tsx src/database/seed/seed.ts",
     "db:seed:prod": "node dist/seed.js",
+    "db:seed:members": "tsx src/database/seed/bulk-members.ts",
     "release": "node dist/migrate.js && node dist/seed.js"
   },
   "dependencies": {
