@@ -1,6 +1,11 @@
-# BCC static SPA server (runs inside the bcc image, unprivileged on :8080).
+# Business Control Center static SPA server.
+#
+# This is an Nginx *template*: the official image's entrypoint runs `envsubst`
+# on /etc/nginx/templates/*.template at startup, substituting ${PORT} (which
+# Railway injects; defaults to 8080 for local/Compose). Nginx runtime variables
+# such as $uri are written without braces so envsubst leaves them untouched.
 server {
-    listen 8080;
+    listen ${PORT};
     server_name _;
 
     root /usr/share/nginx/html;
@@ -17,7 +22,7 @@ server {
     gzip_min_length 1024;
     gzip_types text/plain text/css application/javascript application/json image/svg+xml;
 
-    # Container health probe.
+    # Container / platform health probe.
     location = /healthz {
         access_log off;
         add_header Content-Type text/plain;
