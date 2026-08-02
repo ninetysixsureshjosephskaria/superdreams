@@ -8,7 +8,10 @@
 
 .git
 .github
-.husky
+# NOTE: do NOT exclude the whole .husky directory — the root package.json's
+# `prepare` runs `node .husky/install.mjs`, so that file must be in the build
+# context. Only Husky's generated runtime dir is excluded.
+.husky/_
 docs
 
 **/*.log
