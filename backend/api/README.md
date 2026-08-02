@@ -146,6 +146,41 @@ These also run via Turborepo from the root (`pnpm build`, `pnpm test`, etc.).
 
 ---
 
+## Deployment (Railway)
+
+Railway builds and runs the API from [`railway.json`](./railway.json). Critically,
+the deploy **applies all pending Drizzle migrations before the server starts** so
+the schema is always current — a fresh database bootstraps from migration `0000`,
+and an existing one only gets what it is missing. The start command is:
+
+```
+pnpm --filter @superdreams/api release && pnpm --filter @superdreams/api start
+```
+
+`release` runs `db:migrate:prod` then `db:seed:prod`, both compiled to `dist/`
+(runtime deps only — no `drizzle-kit`/`tsx` needed in production):
+
+| Command             | Runs                | Purpose                                                    |
+| ------------------- | ------------------- | --------------------------------------------------------- |
+| `db:migrate:prod`   | `node dist/migrate.js` | Apply pending migrations from `drizzle/`. Idempotent.  |
+| `db:seed:prod`      | `node dist/seed.js`    | Seed the RBAC catalog + default admin. Idempotent.     |
+| `release`           | both, in order      | The Railway pre-start step.                                |
+
+Both operations are **idempotent**: Drizzle records applied migrations in
+`drizzle.__drizzle_migrations` and skips them; the seeds skip rows that already
+exist. Running them on every deploy is safe. If `release` fails (e.g. the database
+is unreachable) the server does not start and Railway retries per the restart
+policy — the API never boots against an un-migrated schema.
+
+To fix an already-broken production database once, run the same step manually
+against its `DATABASE_URL` (from local, after `pnpm --filter @superdreams/api build`):
+
+```
+DATABASE_URL="<railway-postgres-url>" pnpm --filter @superdreams/api release
+```
+
+---
+
 ## Development Workflow
 
 1. Add or change code under `src/`.

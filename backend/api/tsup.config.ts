@@ -10,7 +10,11 @@ import { defineConfig } from 'tsup';
  * must be bundled (not left external) for the runtime output to be runnable.
  */
 export default defineConfig({
-  entry: ['src/server.ts'],
+  entry: {
+    server: 'src/server.ts',
+    migrate: 'src/migrate.ts',
+    seed: 'src/database/seed/seed.ts',
+  },
   format: ['esm'],
   target: 'node24',
   platform: 'node',

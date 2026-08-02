@@ -17,7 +17,10 @@
     "clean": "rimraf dist coverage .turbo",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsx src/database/seed/seed.ts"
+    "db:migrate:prod": "node dist/migrate.js",
+    "db:seed": "tsx src/database/seed/seed.ts",
+    "db:seed:prod": "node dist/seed.js",
+    "release": "node dist/migrate.js && node dist/seed.js"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.0.2",
