@@ -72,9 +72,23 @@ export function registerErrorHandler(app: FastifyInstance): void {
   app.setErrorHandler((error: FastifyError, request, reply) => {
     const traceId = request.id;
 
-    // Known, operational application errors.
+    // Known, operational application errors. Server-fault (5xx) app errors are
+    // logged at `error` level (with the full stack) so they surface even when
+    // LOG_LEVEL suppresses info/debug in production; client (4xx) errors stay at
+    // info to avoid noise.
     if (error instanceof AppError) {
-      request.log.info({ err: error, code: error.code }, 'Application error');
+      const logContext = {
+        err: error,
+        code: error.code,
+        statusCode: error.statusCode,
+        method: request.method,
+        url: request.url,
+      };
+      if (error.statusCode >= 500) {
+        request.log.error(logContext, 'Application error (server fault)');
+      } else {
+        request.log.info(logContext, 'Application error');
+      }
       return sendError(reply, error.statusCode, error.code, error.message, { traceId });
     }
 
@@ -106,7 +120,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
     }
 
     // Unexpected, non-operational errors: log fully, expose nothing sensitive.
-    request.log.error({ err: error }, 'Unhandled error');
+    request.log.error({ err: error, method: request.method, url: request.url }, 'Unhandled error');
     const message = config.app.isProduction ? 'An unexpected error occurred.' : error.message;
     return sendError(reply, 500, ErrorCode.INTERNAL_SERVER_ERROR, message, { traceId });
   });
