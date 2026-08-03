@@ -168,6 +168,13 @@ interface ItemsEnvelope<T> {
   data: { items: T[] };
 }
 
+/** Result of the Super Admin "Generate Demo Members" action. */
+export interface GenerateDemoMembersResult {
+  created: number;
+  skipped: number;
+  message: string;
+}
+
 export interface MembersApi {
   list(params?: ListMembersParams): Promise<PaginatedMembers>;
   get(id: string): Promise<MemberDetail>;
@@ -183,6 +190,8 @@ export interface MembersApi {
   addDocument(id: string, input: AddDocumentInput): Promise<MemberDocumentData>;
   getMe(): Promise<MemberDetail>;
   updateMe(input: UpdateOwnProfileInput): Promise<MemberDetail>;
+  /** Super Admin only: idempotently generate demo members; returns created/skipped counts. */
+  generateDemoMembers(count?: number): Promise<GenerateDemoMembersResult>;
 }
 
 /** Binds the members resource to a configured API client. */
@@ -251,6 +260,13 @@ export function createMembersApi(client: AxiosInstance): MembersApi {
     },
     async updateMe(input) {
       const response = await client.put<Envelope<MemberDetail>>(`${base}/me`, input);
+      return response.data.data;
+    },
+    async generateDemoMembers(count) {
+      const response = await client.post<Envelope<GenerateDemoMembersResult>>(
+        `${base}/demo`,
+        count !== undefined ? { count } : {},
+      );
       return response.data.data;
     },
   };

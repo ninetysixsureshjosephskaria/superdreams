@@ -13,6 +13,7 @@ import type {
   ApiError,
   ChangeStatusInput,
   CreateMemberInput,
+  GenerateDemoMembersResult,
   ListMembersParams,
   MemberActivityData,
   MemberDetail,
@@ -134,6 +135,21 @@ export function useAddMemberDocument(
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: memberKeys.documents(id) });
       void queryClient.invalidateQueries({ queryKey: memberKeys.activity(id) });
+    },
+  });
+}
+
+/** Super Admin: idempotently generate demo members, then refresh the list. */
+export function useGenerateDemoMembers(): UseMutationResult<
+  GenerateDemoMembersResult,
+  ApiError,
+  number | undefined
+> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (count?: number) => membersApi.generateDemoMembers(count),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: memberKeys.lists() });
     },
   });
 }

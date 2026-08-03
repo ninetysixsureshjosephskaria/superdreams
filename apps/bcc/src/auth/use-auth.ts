@@ -12,13 +12,15 @@ export interface UseAuthResult {
   logout: () => Promise<void>;
 }
 
-/** Best-effort load of the caller's effective permissions (super-admins have all). */
-async function loadPermissions(userId: string): Promise<string[]> {
+/** Best-effort load of the caller's effective roles + permissions (super-admins have all). */
+async function loadPermissions(
+  userId: string,
+): Promise<{ permissions: string[]; roles: string[] }> {
   try {
     const result = await authApi.getUserPermissions(userId);
-    return result.permissions;
+    return { permissions: result.permissions, roles: result.roles };
   } catch {
-    return [];
+    return { permissions: [], roles: [] };
   }
 }
 
@@ -36,8 +38,10 @@ export function useAuth(): UseAuthResult {
     const result = await authApi.login(input);
     store.setRemember(input.rememberMe ?? false);
     store.setTokens({ accessToken: result.accessToken, refreshToken: result.refreshToken });
-    const permissions = result.user.mustChangePassword ? [] : await loadPermissions(result.user.id);
-    store.completeSession({ user: result.user, permissions });
+    const { permissions, roles } = result.user.mustChangePassword
+      ? { permissions: [], roles: [] }
+      : await loadPermissions(result.user.id);
+    store.completeSession({ user: result.user, permissions, roles });
     return result.user;
   }, []);
 

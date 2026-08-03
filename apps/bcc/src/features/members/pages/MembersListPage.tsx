@@ -3,10 +3,13 @@ import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 
 import { PageHeader } from '@/components/page-header';
+import { usePermissions } from '@/hooks';
+import { useNotificationStore } from '@/store';
 import type { MemberSortField, MemberSummary } from '@superdreams/api-client';
 import {
   Alert,
   Button,
+  ConfirmationDialog,
   DataTable,
   Icon,
   Pagination,
@@ -17,7 +20,7 @@ import {
 } from '@superdreams/ui';
 
 import { MemberStatusBadge } from '../components/MemberStatusBadge';
-import { useMembers } from '../hooks';
+import { useGenerateDemoMembers, useMembers } from '../hooks';
 
 const PAGE_SIZE = 10;
 
@@ -45,6 +48,11 @@ export default function MembersListPage() {
   const [status, setStatus] = useState('');
   const [sort, setSort] = useState<DataTableSort>({ columnId: 'joinedAt', direction: 'desc' });
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  const { isSuperAdmin } = usePermissions();
+  const notify = useNotificationStore((state) => state.notify);
+  const generateDemo = useGenerateDemoMembers();
+  const [confirmDemoOpen, setConfirmDemoOpen] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -102,14 +110,64 @@ export default function MembersListPage() {
         title="Members"
         description="Search, filter and manage platform members."
         actions={
-          <Button
-            leftIcon={<Icon name="plus" size="sm" />}
-            onClick={() => navigate('/members/new')}
-          >
-            New member
-          </Button>
+          <div className="flex items-center gap-2">
+            {isSuperAdmin ? (
+              <Button
+                variant="secondary"
+                leftIcon={<Icon name="users" size="sm" />}
+                onClick={() => setConfirmDemoOpen(true)}
+                isLoading={generateDemo.isPending}
+              >
+                Generate Demo Members
+              </Button>
+            ) : null}
+            <Button
+              leftIcon={<Icon name="plus" size="sm" />}
+              onClick={() => navigate('/members/new')}
+            >
+              New member
+            </Button>
+          </div>
         }
       />
+
+      {isSuperAdmin ? (
+        <ConfirmationDialog
+          isOpen={confirmDemoOpen}
+          title="Generate Demo Members"
+          description={
+            'This will create the default demo members (member01–member15).\n\n' +
+            'Existing demo members will be skipped.\n\n' +
+            'Default password:\nMember123!\n\n' +
+            'Do you want to continue?'
+          }
+          confirmLabel="Generate"
+          cancelLabel="Cancel"
+          isConfirming={generateDemo.isPending}
+          onCancel={() => setConfirmDemoOpen(false)}
+          onConfirm={() => {
+            generateDemo.mutate(undefined, {
+              onSuccess: (result) => {
+                setConfirmDemoOpen(false);
+                // All skipped = already exist → informational, not an error.
+                notify({
+                  variant: result.created > 0 ? 'success' : 'info',
+                  title: result.created > 0 ? 'Demo members created' : 'Demo members already exist',
+                  description: `${result.message} Created ${result.created}, skipped ${result.skipped}.`,
+                });
+              },
+              onError: (error) => {
+                setConfirmDemoOpen(false);
+                notify({
+                  variant: 'error',
+                  title: 'Could not generate demo members',
+                  description: error instanceof Error ? error.message : 'Unexpected error.',
+                });
+              },
+            });
+          }}
+        />
+      ) : null}
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="min-w-56 flex-1">

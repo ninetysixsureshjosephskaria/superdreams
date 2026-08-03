@@ -4,7 +4,10 @@ import { useSessionStore } from '@/store';
 
 export interface UsePermissionsResult {
   permissions: readonly string[];
+  roles: readonly string[];
   can: (permission: string) => boolean;
+  /** True when the caller holds the `super-admin` role. */
+  isSuperAdmin: boolean;
 }
 
 /**
@@ -14,9 +17,14 @@ export interface UsePermissionsResult {
  */
 export function usePermissions(): UsePermissionsResult {
   const permissions = useSessionStore((state) => state.permissions);
+  const roles = useSessionStore((state) => state.roles);
   const can = useCallback(
     (permission: string) => permissions.includes('*') || permissions.includes(permission),
     [permissions],
   );
-  return useMemo(() => ({ permissions, can }), [permissions, can]);
+  const isSuperAdmin = roles.includes('super-admin');
+  return useMemo(
+    () => ({ permissions, roles, can, isSuperAdmin }),
+    [permissions, roles, can, isSuperAdmin],
+  );
 }

@@ -86,7 +86,7 @@ export function registerMembersModule(app: FastifyInstance): MembersModule {
   const rbac = createRbacModule(app.db, { redis: app.redis });
   const guardDeps: GuardDeps = { authorization: rbac.authorization, events: rbac.events };
 
-  registerMemberRoutes(app, { service: module.service, authenticate, guardDeps });
+  registerMemberRoutes(app, { service: module.service, authenticate, guardDeps, db: app.db });
   return module;
 }
 

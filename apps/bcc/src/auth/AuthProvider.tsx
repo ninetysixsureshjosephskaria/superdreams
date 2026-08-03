@@ -34,9 +34,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           refreshToken: refreshed.refreshToken,
         });
         const user = await authApi.me();
-        const permissions = user.mustChangePassword ? [] : await loadPermissions(user.id);
+        const { permissions, roles } = user.mustChangePassword
+          ? { permissions: [], roles: [] }
+          : await loadPermissions(user.id);
         if (!active) return;
-        store.completeSession({ user, permissions });
+        store.completeSession({ user, permissions, roles });
       } catch {
         if (active) store.clear();
       }

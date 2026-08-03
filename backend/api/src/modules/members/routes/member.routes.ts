@@ -1,9 +1,17 @@
 import type { FastifyInstance, FastifySchema, preHandlerAsyncHookHandler } from 'fastify';
 
-import { PERMISSIONS, requirePermission, type GuardDeps } from '@/modules/rbac';
+import type { Database } from '@/database/client';
+import { seedBulkMembers } from '@/database/seed/bulk-members-core';
+import { requireAuth } from '@/modules/auth/guards';
+import { PERMISSIONS, requirePermission, requireRole, type GuardDeps } from '@/modules/rbac';
+import { sendSuccess } from '@/utils';
 
 import { MemberController } from '../controllers';
 import type { MemberService } from '../services';
+
+/** Default number of demo members generated when no explicit count is provided. */
+const DEMO_MEMBER_COUNT = 15;
+const DEMO_MEMBER_MAX = 50;
 
 const MEMBERS_PREFIX = '/api/v1/members';
 const secured = [{ bearerAuth: [] }];
@@ -149,6 +157,8 @@ export interface RegisterMemberRoutesOptions {
   service: MemberService;
   authenticate: preHandlerAsyncHookHandler;
   guardDeps: GuardDeps;
+  /** Database handle — used by the Super Admin demo-member generator. */
+  db: Database;
 }
 
 /**
@@ -160,7 +170,7 @@ export function registerMemberRoutes(
   app: FastifyInstance,
   options: RegisterMemberRoutesOptions,
 ): void {
-  const { service, authenticate, guardDeps } = options;
+  const { service, authenticate, guardDeps, db } = options;
   const controller = new MemberController(service);
 
   const protect = (permission: string): preHandlerAsyncHookHandler[] => [
@@ -168,12 +178,50 @@ export function registerMemberRoutes(
     requirePermission(guardDeps, permission),
   ];
   const authed: preHandlerAsyncHookHandler[] = [authenticate];
+  // Super Admin only — the generator writes users/members/wallets/rewards.
+  const superAdminOnly: preHandlerAsyncHookHandler[] = [
+    authenticate,
+    requireRole(guardDeps, 'super-admin'),
+  ];
 
   app.register(
     (instance, _options, done) => {
       // Self-service (static path — resolves before `/:id`).
       instance.get('/me', { schema: meSchema, preHandler: authed }, controller.getMe);
       instance.put('/me', { schema: updateMeSchema, preHandler: authed }, controller.updateMe);
+
+      // Super Admin: generate demo members (idempotent). Reports created/skipped.
+      instance.post(
+        '/demo',
+        {
+          schema: {
+            tags: ['Members'],
+            summary: 'Generate demo members (Super Admin only)',
+            security: secured,
+            body: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                count: { type: 'integer', minimum: 1, maximum: DEMO_MEMBER_MAX },
+              },
+            },
+          },
+          preHandler: superAdminOnly,
+        },
+        async (request, reply) => {
+          const body = (request.body ?? {}) as { count?: number };
+          const requested = typeof body.count === 'number' ? body.count : DEMO_MEMBER_COUNT;
+          const count = Math.min(DEMO_MEMBER_MAX, Math.max(1, Math.trunc(requested)));
+          const { userId } = requireAuth(request);
+          const { created, skipped } = await seedBulkMembers(db, count, { actorUserId: userId });
+          const createdCount = created.length;
+          const message =
+            createdCount === 0
+              ? 'Demo members already exist.'
+              : 'Demo members created successfully.';
+          return sendSuccess(reply, { created: createdCount, skipped, message });
+        },
+      );
 
       // Admin CRUD.
       instance.get(

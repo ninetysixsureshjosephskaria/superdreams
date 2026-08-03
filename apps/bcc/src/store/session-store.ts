@@ -26,6 +26,7 @@ interface SessionState {
   accessToken: string | null;
   refreshToken: string | null;
   permissions: string[];
+  roles: string[];
   /** Whether the refresh token persists across browser restarts ("remember me"). */
   remember: boolean;
   status: AuthStatus;
@@ -33,7 +34,7 @@ interface SessionState {
   setStatus: (status: AuthStatus) => void;
   setRemember: (remember: boolean) => void;
   setTokens: (tokens: SetTokensInput) => void;
-  completeSession: (input: { user: AuthUser; permissions?: string[] }) => void;
+  completeSession: (input: { user: AuthUser; permissions?: string[]; roles?: string[] }) => void;
   clear: () => void;
 }
 
@@ -84,6 +85,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   accessToken: null,
   refreshToken: null,
   permissions: [],
+  roles: [],
   remember: false,
   status: 'loading',
   isAuthenticated: false,
@@ -93,10 +95,11 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     persistRefresh(refreshToken, get().remember);
     set({ accessToken, refreshToken });
   },
-  completeSession: ({ user, permissions }) => {
+  completeSession: ({ user, permissions, roles }) => {
     set({
       user: toSessionUser(user),
       permissions: permissions ?? [],
+      roles: roles ?? [],
       status: 'authenticated',
       isAuthenticated: true,
     });
@@ -108,6 +111,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       accessToken: null,
       refreshToken: null,
       permissions: [],
+      roles: [],
       status: 'unauthenticated',
       isAuthenticated: false,
     });

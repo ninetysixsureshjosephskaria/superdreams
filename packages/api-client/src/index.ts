@@ -36,6 +36,7 @@ export type {
   AddNoteInput,
   AddDocumentInput,
   UpdateOwnProfileInput,
+  GenerateDemoMembersResult,
 } from './members';
 export { createWalletApi } from './wallet';
 export type {
