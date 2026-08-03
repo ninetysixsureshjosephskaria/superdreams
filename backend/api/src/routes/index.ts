@@ -13,6 +13,7 @@ import { registerSettingsModule } from '@/modules/settings';
 import { registerStoreModule } from '@/modules/store';
 import { registerWalletModule } from '@/modules/wallet';
 
+import { registerDebugRoutes } from './debug.route';
 import { registerRootRoute } from './root.route';
 
 /**
@@ -21,6 +22,7 @@ import { registerRootRoute } from './root.route';
 export function registerRoutes(app: FastifyInstance): void {
   registerRootRoute(app);
   registerHealthRoutes(app);
+  registerDebugRoutes(app);
   registerAuthModule(app);
   registerRbacModule(app);
   registerMembersModule(app);
