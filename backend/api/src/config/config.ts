@@ -52,6 +52,13 @@ export const config = {
     cacheEnabled: env.RBAC_CACHE_ENABLED,
     permissionCacheTtlSeconds: env.RBAC_PERMISSION_CACHE_TTL_SECONDS,
   },
+  email: {
+    provider: env.EMAIL_PROVIDER,
+    resendApiKey: env.RESEND_API_KEY,
+    from: env.EMAIL_FROM,
+    // Member-portal base URL used to build activation / reset links.
+    webAppUrl: env.WEB_APP_URL.replace(/\/$/, ''),
+  },
   cors: {
     origins:
       env.CORS_ORIGINS === '*'

@@ -26,6 +26,10 @@ export class EmailVerificationService {
       throw new UnauthorizedError('Invalid or expired verification token.');
     }
     await this.verificationTokens.markVerified(row.id);
-    await this.identity.repositories.users.update(row.userId, { emailVerifiedAt: new Date() });
+    // Activate the account: mark the email verified and promote PENDING → ACTIVE.
+    await this.identity.repositories.users.update(row.userId, {
+      emailVerifiedAt: new Date(),
+      status: 'ACTIVE',
+    });
   }
 }

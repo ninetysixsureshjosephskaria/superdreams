@@ -93,6 +93,31 @@ const verifyEmailSchema: FastifySchema = {
   },
 };
 
+const registerSchema: FastifySchema = {
+  tags: ['Auth'],
+  summary: 'Sign up for a member account (creates a pending, unverified account)',
+  body: {
+    type: 'object',
+    required: ['email', 'password', 'firstName', 'lastName'],
+    properties: {
+      email: { type: 'string', format: 'email' },
+      password: { type: 'string' },
+      firstName: { type: 'string' },
+      lastName: { type: 'string' },
+    },
+  },
+};
+
+const resendVerificationSchema: FastifySchema = {
+  tags: ['Auth'],
+  summary: 'Resend the account activation email',
+  body: {
+    type: 'object',
+    required: ['email'],
+    properties: { email: { type: 'string', format: 'email' } },
+  },
+};
+
 const listSessionsSchema: FastifySchema = {
   tags: ['Auth'],
   summary: 'List active sessions for the current user',
@@ -130,11 +155,18 @@ export function registerAuthRoutes(app: FastifyInstance, module: AuthModule): vo
     module.password,
     module.emailVerification,
     module.sessions,
+    module.registration,
   );
   const authenticate = createAuthenticate({ tokens: module.tokens, sessions: module.sessions });
 
   app.register(
     (instance, _options, done) => {
+      instance.post('/register', { schema: registerSchema }, controller.register);
+      instance.post(
+        '/resend-verification',
+        { schema: resendVerificationSchema },
+        controller.resendVerification,
+      );
       instance.post('/login', { schema: loginSchema }, controller.login);
       instance.post('/refresh', { schema: refreshSchema }, controller.refresh);
       instance.post(

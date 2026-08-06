@@ -18,6 +18,8 @@ async function createActiveUser(
 ): Promise<string> {
   const user = await identity.users.createUser({ email, password });
   await identity.users.changeStatus(user.id, 'ACTIVE');
+  // Sign-in now requires an activated (email-verified) account.
+  await identity.repositories.users.update(user.id, { emailVerifiedAt: new Date() });
   return user.id;
 }
 
@@ -144,7 +146,13 @@ describe('auth module (PGlite)', () => {
   });
 
   it('verifies an email via a verification token', async () => {
-    const userId = await createActiveUser(identity, 'verify@acme.test', 'Str0ngPass1');
+    // Deliberately unverified (this test exercises the verification transition).
+    const created = await identity.users.createUser({
+      email: 'verify@acme.test',
+      password: 'Str0ngPass1',
+    });
+    await identity.users.changeStatus(created.id, 'ACTIVE');
+    const userId = created.id;
     const before = await identity.users.getById(userId);
     expect(before?.emailVerifiedAt ?? null).toBeNull();
 

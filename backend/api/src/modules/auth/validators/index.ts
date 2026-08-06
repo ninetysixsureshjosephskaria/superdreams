@@ -32,6 +32,17 @@ export const verifyEmailSchema = z.object({
   token: z.string().min(1),
 });
 
+export const registerSchema = z.object({
+  email: emailSchema,
+  password: passwordSchema,
+  firstName: z.string().trim().min(1).max(100),
+  lastName: z.string().trim().min(1).max(100),
+});
+
+export const resendVerificationSchema = z.object({
+  email: emailSchema,
+});
+
 export const revokeSessionSchema = z.object({
   sessionId: z.string().uuid(),
 });

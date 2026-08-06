@@ -11,6 +11,7 @@ import type {
   AuthService,
   EmailVerificationService,
   PasswordService,
+  RegistrationService,
   SessionService,
 } from '../services';
 import { revokeSessionSchema, sessionParamsSchema, verifyEmailSchema } from '../validators';
@@ -45,7 +46,38 @@ export class AuthController {
     private readonly password: PasswordService,
     private readonly emailVerification: EmailVerificationService,
     private readonly sessions: SessionService,
+    private readonly registration: RegistrationService,
   ) {}
+
+  /** Sign up: creates a PENDING account and sends the activation email. */
+  public register = async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {
+    const result = await this.registration.register(request.body);
+    const payload: { message: string; email: string; verificationToken?: string } = {
+      message: 'Account created. Check your email to activate your account.',
+      email: result.email,
+    };
+    // Delivery is handled by the email provider; expose the raw token only outside
+    // production so the flow is testable locally without an inbox.
+    if (!config.app.isProduction) {
+      payload.verificationToken = result.verificationToken;
+    }
+    return sendSuccess(reply, payload, 201);
+  };
+
+  /** Resend the activation email (idempotent; never discloses account existence). */
+  public resendVerification = async (
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<FastifyReply> => {
+    const token = await this.registration.resendVerification(request.body);
+    const payload: { message: string; verificationToken?: string } = {
+      message: 'If the account exists and is not yet verified, an activation email has been sent.',
+    };
+    if (!config.app.isProduction && token !== null) {
+      payload.verificationToken = token;
+    }
+    return sendSuccess(reply, payload);
+  };
 
   public login = async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {
     const result = await this.auth.login(request.body, requestContextFrom(request));

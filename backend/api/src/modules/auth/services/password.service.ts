@@ -1,4 +1,5 @@
 import { config } from '@/config';
+import type { EmailService } from '@/email';
 import { UnauthorizedError, ValidationError } from '@/errors';
 import { hashPassword, verifyPassword, type IdentityModule } from '@/modules/identity';
 
@@ -16,6 +17,7 @@ export class PasswordService {
     private readonly passwordHistory: PasswordHistoryRepository,
     private readonly sessions: SessionService,
     private readonly events: AuthEventBus,
+    private readonly email: EmailService,
   ) {}
 
   /**
@@ -33,6 +35,7 @@ export class PasswordService {
     const raw = generateOpaqueToken();
     const expiresAt = new Date(Date.now() + config.auth.resetTtlSeconds * 1000);
     await this.resetTokens.create(userRow.id, hashToken(raw), expiresAt);
+    await this.email.sendPasswordResetEmail(userRow.email, userRow.firstName, raw);
     await this.events.publish({
       type: 'PasswordResetRequested',
       userId: userRow.id,

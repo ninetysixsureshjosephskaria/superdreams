@@ -63,6 +63,30 @@ export interface UserPermissions {
   permissions: string[];
 }
 
+export interface RegisterInput {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
+
+/** `verificationToken`/`resetToken` are only present outside production (local testing). */
+export interface RegisterResult {
+  message: string;
+  email: string;
+  verificationToken?: string;
+}
+
+export interface ResendVerificationResult {
+  message: string;
+  verificationToken?: string;
+}
+
+export interface ForgotPasswordResult {
+  message: string;
+  resetToken?: string;
+}
+
 interface Envelope<T> {
   success: boolean;
   data: T;
@@ -77,6 +101,16 @@ export interface AuthApi {
   changePassword(input: ChangePasswordInput): Promise<{ message: string }>;
   /** Effective roles + permissions for a user (requires users.permissions.read). */
   getUserPermissions(userId: string): Promise<UserPermissions>;
+  /** Sign up — creates a pending account and triggers the activation email. */
+  register(input: RegisterInput): Promise<RegisterResult>;
+  /** Resend the activation email. */
+  resendVerification(email: string): Promise<ResendVerificationResult>;
+  /** Activate an account with the emailed token. */
+  verifyEmail(token: string): Promise<{ verified: boolean }>;
+  /** Request a password-reset email. */
+  forgotPassword(email: string): Promise<ForgotPasswordResult>;
+  /** Reset the password with the emailed token. */
+  resetPassword(token: string, password: string): Promise<{ message: string }>;
 }
 
 /** Binds the auth resource to a configured API client. */
@@ -112,6 +146,39 @@ export function createAuthApi(client: AxiosInstance): AuthApi {
       const response = await client.get<Envelope<UserPermissions>>(
         `/api/v1/users/${userId}/permissions`,
       );
+      return response.data.data;
+    },
+    async register(input) {
+      const response = await client.post<Envelope<RegisterResult>>(`${base}/register`, input);
+      return response.data.data;
+    },
+    async resendVerification(email) {
+      const response = await client.post<Envelope<ResendVerificationResult>>(
+        `${base}/resend-verification`,
+        { email },
+      );
+      return response.data.data;
+    },
+    async verifyEmail(token) {
+      const response = await client.post<Envelope<{ verified: boolean }>>(`${base}/verify-email`, {
+        token,
+      });
+      return response.data.data;
+    },
+    async forgotPassword(email) {
+      const response = await client.post<Envelope<ForgotPasswordResult>>(
+        `${base}/forgot-password`,
+        {
+          email,
+        },
+      );
+      return response.data.data;
+    },
+    async resetPassword(token, password) {
+      const response = await client.post<Envelope<{ message: string }>>(`${base}/reset-password`, {
+        token,
+        password,
+      });
       return response.data.data;
     },
   };

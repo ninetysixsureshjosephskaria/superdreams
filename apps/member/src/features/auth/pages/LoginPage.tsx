@@ -2,12 +2,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useForm } from 'react-hook-form';
-import { useLocation, useNavigate, Navigate } from 'react-router-dom';
+import { useLocation, useNavigate, Navigate, Link } from 'react-router-dom';
 import { z } from 'zod';
 
 import { useAuth } from '@/auth';
 import { ROUTES } from '@/constants';
-import { ApiError } from '@/services';
+import { ApiError, authApi } from '@/services';
 import { useSessionStore } from '@/store';
 import {
   Alert,
@@ -39,6 +39,8 @@ export default function LoginPage() {
   const { login } = useAuth();
   const isAuthenticated = useSessionStore((state) => state.isAuthenticated);
   const [formError, setFormError] = useState<string | null>(null);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -57,6 +59,8 @@ export default function LoginPage() {
 
   const onSubmit = async (values: LoginFormValues): Promise<void> => {
     setFormError(null);
+    setUnverifiedEmail(null);
+    setResendMessage(null);
     try {
       const user = await login({
         email: values.email,
@@ -69,7 +73,26 @@ export default function LoginPage() {
       }
       navigate(from, { replace: true });
     } catch (error) {
-      setFormError(error instanceof ApiError ? error.message : 'Sign in failed. Please try again.');
+      const message =
+        error instanceof ApiError ? error.message : 'Sign in failed. Please try again.';
+      setFormError(message);
+      // Offer to re-send the activation email when the account isn't verified yet.
+      if (/verify your email/i.test(message)) {
+        setUnverifiedEmail(values.email);
+      }
+    }
+  };
+
+  const resendActivation = async (): Promise<void> => {
+    if (!unverifiedEmail) return;
+    setResendMessage(null);
+    try {
+      await authApi.resendVerification(unverifiedEmail);
+    } finally {
+      // Response is intentionally non-committal (never discloses account existence).
+      setResendMessage(
+        'If the account exists and is unverified, a new activation email is on its way.',
+      );
     }
   };
 
@@ -112,6 +135,42 @@ export default function LoginPage() {
                 Sign in
               </Button>
             </form>
+
+            {unverifiedEmail ? (
+              <div className="space-y-2 rounded-input border border-border bg-muted/30 p-3 text-center">
+                {resendMessage ? (
+                  <p className="text-sm text-muted-foreground">{resendMessage}</p>
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground">
+                      Your account isn&rsquo;t activated yet.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        void resendActivation();
+                      }}
+                    >
+                      Resend activation email
+                    </Button>
+                  </>
+                )}
+              </div>
+            ) : null}
+
+            <div className="flex items-center justify-between text-sm">
+              <Link to={ROUTES.forgotPassword} className="font-medium text-primary hover:underline">
+                Forgot password?
+              </Link>
+              <span className="text-muted-foreground">
+                New here?{' '}
+                <Link to={ROUTES.signup} className="font-medium text-primary hover:underline">
+                  Sign up
+                </Link>
+              </span>
+            </div>
           </CardContent>
         </Card>
       </main>

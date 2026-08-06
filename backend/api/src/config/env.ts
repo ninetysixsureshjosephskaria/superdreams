@@ -50,6 +50,13 @@ const EnvSchema = z
 
     CORS_ORIGINS: z.string().default('*'),
 
+    // Email delivery. `mock` captures locally; `resend` sends via the Resend API.
+    EMAIL_PROVIDER: z.enum(['mock', 'resend']).default('mock'),
+    RESEND_API_KEY: z.string().optional(),
+    EMAIL_FROM: z.string().min(1).default('Super Dreams <onboarding@resend.dev>'),
+    // Base URL of the Member Portal, used to build activation / reset links.
+    WEB_APP_URL: z.string().url().default('http://localhost:5173'),
+
     RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(100),
     RATE_LIMIT_WINDOW: z.string().min(1).default('1 minute'),
 

@@ -39,6 +39,14 @@ export class AuthService {
       await this.recordFailure(data.email, userRow.id, 'invalid_credentials', context);
       throw new UnauthorizedError('Invalid email or password.');
     }
+    // Block sign-in until the account has been activated (email verified). Checked
+    // after the password so we never reveal which accounts exist to a guesser.
+    if (userRow.emailVerifiedAt === null) {
+      await this.recordFailure(data.email, userRow.id, 'email_unverified', context);
+      throw new UnauthorizedError(
+        'Please verify your email to activate your account before signing in.',
+      );
+    }
 
     await this.loginHistory.record({
       userId: userRow.id,

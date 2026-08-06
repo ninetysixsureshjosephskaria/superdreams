@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 
 import type { Database } from '@/database';
+import { createEmailService, type EmailService } from '@/email';
 import { createIdentityModule, type IdentityModule } from '@/modules/identity';
 
 import { AuthEventBus } from './events';
@@ -14,7 +15,13 @@ import {
   SessionRepository,
 } from './repositories';
 import { registerAuthRoutes } from './routes';
-import { AuthService, EmailVerificationService, PasswordService, SessionService } from './services';
+import {
+  AuthService,
+  EmailVerificationService,
+  PasswordService,
+  RegistrationService,
+  SessionService,
+} from './services';
 import { TokenService } from './strategies/jwt.strategy';
 
 export interface AuthModule {
@@ -24,6 +31,8 @@ export interface AuthModule {
   auth: AuthService;
   password: PasswordService;
   emailVerification: EmailVerificationService;
+  registration: RegistrationService;
+  email: EmailService;
 }
 
 /**
@@ -34,6 +43,7 @@ export function createAuthModule(
   db: Database,
   identity: IdentityModule = createIdentityModule(db),
   events: AuthEventBus = new AuthEventBus(),
+  email: EmailService = createEmailService(),
 ): AuthModule {
   const sessionRepository = new SessionRepository(db);
   const deviceRepository = new DeviceRepository(db);
@@ -58,10 +68,12 @@ export function createAuthModule(
     passwordHistoryRepository,
     sessions,
     events,
+    email,
   );
   const emailVerification = new EmailVerificationService(identity, verificationTokenRepository);
+  const registration = new RegistrationService(identity, emailVerification, email);
 
-  return { events, tokens, sessions, auth, password, emailVerification };
+  return { events, tokens, sessions, auth, password, emailVerification, registration, email };
 }
 
 /**

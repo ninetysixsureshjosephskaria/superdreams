@@ -19,6 +19,10 @@ const WalletPage = lazy(() => import('@/features/wallet/pages/WalletPage'));
 const GamesPage = lazy(() => import('@/features/games/pages/GamesPage'));
 const DreamStorePage = lazy(() => import('@/features/dream-store/pages/DreamStorePage'));
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));
+const SignUpPage = lazy(() => import('@/features/auth/pages/SignUpPage'));
+const ActivatePage = lazy(() => import('@/features/auth/pages/ActivatePage'));
+const ForgotPasswordPage = lazy(() => import('@/features/auth/pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('@/features/auth/pages/ResetPasswordPage'));
 const ChangePasswordPage = lazy(() => import('@/features/auth/pages/ChangePasswordPage'));
 const UnauthorizedPage = lazy(() => import('@/pages/errors/UnauthorizedPage'));
 const ForbiddenPage = lazy(() => import('@/pages/errors/ForbiddenPage'));
@@ -56,6 +60,26 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.login.replace(/^\//, ''),
     element: lazyPage(<LoginPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: ROUTES.signup.replace(/^\//, ''),
+    element: lazyPage(<SignUpPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: ROUTES.activate.replace(/^\//, ''),
+    element: lazyPage(<ActivatePage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: ROUTES.forgotPassword.replace(/^\//, ''),
+    element: lazyPage(<ForgotPasswordPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: ROUTES.resetPassword.replace(/^\//, ''),
+    element: lazyPage(<ResetPasswordPage />),
     errorElement: <RouteErrorPage />,
   },
   {

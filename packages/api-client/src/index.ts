@@ -12,6 +12,10 @@ export type {
   RefreshResult,
   ChangePasswordInput,
   UserPermissions,
+  RegisterInput,
+  RegisterResult,
+  ResendVerificationResult,
+  ForgotPasswordResult,
 } from './auth';
 export { createMembersApi } from './members';
 export type {
