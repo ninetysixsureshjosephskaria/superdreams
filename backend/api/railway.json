@@ -5,7 +5,7 @@
     "dockerfilePath": "backend/api/Dockerfile"
   },
   "deploy": {
-    "startCommand": "node dist/migrate.js; MIGRATE_EXIT=$?; echo '=== AFTER MIGRATE ==='; echo \"EXIT_CODE=$MIGRATE_EXIT\"; echo '=== STARTING SEED ==='; node dist/seed.js; SEED_EXIT=$?; echo '=== AFTER SEED ==='; echo \"SEED_EXIT_CODE=$SEED_EXIT\"; echo '=== STARTING SERVER ==='; node dist/server.js",
+    "startCommand": "sh scripts/start.sh",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
