@@ -6,6 +6,7 @@ import { config } from '@/config';
  * graceful shutdown, and starts listening.
  */
 async function start(): Promise<void> {
+  process.stdout.write('server starting\n');
   const app = await buildApp();
 
   const shutdown = (signal: NodeJS.Signals): void => {
@@ -30,6 +31,7 @@ async function start(): Promise<void> {
 
   try {
     const address = await app.listen({ host: config.app.host, port: config.app.port });
+    process.stdout.write('server listening\n');
     app.log.info(`Super Dreams API listening at ${address}`);
   } catch (error) {
     app.log.error({ err: error }, 'Failed to start server');

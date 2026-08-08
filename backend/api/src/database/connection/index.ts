@@ -33,8 +33,22 @@ const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(
  * graceful close. The underlying driver connects lazily, so this never blocks
  * startup when the database is temporarily unavailable.
  */
-export function createDatabaseConnection(): DatabaseConnection {
-  const client = createPostgresClient({ url: config.database.url, max: config.database.poolMax });
+export interface DatabaseConnectionOptions {
+  /** Per-connection `statement_timeout` (ms) — bounds any single query. */
+  statementTimeoutMs?: number;
+  /** Per-connection `lock_timeout` (ms) — bounds waiting on a row/table lock. */
+  lockTimeoutMs?: number;
+}
+
+export function createDatabaseConnection(options?: DatabaseConnectionOptions): DatabaseConnection {
+  const client = createPostgresClient({
+    url: config.database.url,
+    max: config.database.poolMax,
+    ...(options?.statementTimeoutMs !== undefined
+      ? { statementTimeoutMs: options.statementTimeoutMs }
+      : {}),
+    ...(options?.lockTimeoutMs !== undefined ? { lockTimeoutMs: options.lockTimeoutMs } : {}),
+  });
   const db = createDatabase(client);
 
   const ping = async (): Promise<void> => {

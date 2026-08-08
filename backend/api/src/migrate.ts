@@ -32,6 +32,7 @@ function resolveMigrationsFolder(): string {
 }
 
 async function main(): Promise<void> {
+  process.stdout.write('migrate.js starting\n');
   const migrationsFolder = resolveMigrationsFolder();
   const connection = createDatabaseConnection();
 
@@ -48,6 +49,10 @@ async function main(): Promise<void> {
   );
 
   await connection.close();
+  process.stdout.write('migrate.js completed\n');
+  // Exit explicitly after the connection is closed so a residual handle can
+  // never leave the process alive and stall the startup chain.
+  process.exit(0);
 }
 
 void main().catch((error) => {

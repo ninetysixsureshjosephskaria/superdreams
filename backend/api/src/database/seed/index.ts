@@ -27,7 +27,10 @@ export async function runSeeds(db: Database, environment: SeedEnvironment): Prom
   const applied: string[] = [];
   for (const seed of registry) {
     if (seed.environments.includes(environment)) {
+      // Diagnostic markers so a stall inside any seed is visible in deploy logs.
+      process.stdout.write(`${seed.name} starting\n`);
       await seed.run(db);
+      process.stdout.write(`${seed.name} completed\n`);
       applied.push(seed.name);
     }
   }

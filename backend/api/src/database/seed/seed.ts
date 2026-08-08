@@ -14,8 +14,17 @@ import './demo';
  * registered for the current environment, then closes. No-op when no seeds are
  * registered.
  */
+// Bound the seed connection so a stuck query or a contended lock fails fast
+// instead of hanging the deploy forever (migrate -> seed -> server chain).
+const SEED_STATEMENT_TIMEOUT_MS = 30_000;
+const SEED_LOCK_TIMEOUT_MS = 15_000;
+
 async function main(): Promise<void> {
-  const connection = createDatabaseConnection();
+  process.stdout.write('seed.js starting\n');
+  const connection = createDatabaseConnection({
+    statementTimeoutMs: SEED_STATEMENT_TIMEOUT_MS,
+    lockTimeoutMs: SEED_LOCK_TIMEOUT_MS,
+  });
   try {
     await connection.connectWithRetry();
     const applied = await runSeeds(connection.db, config.app.env);
@@ -25,6 +34,13 @@ async function main(): Promise<void> {
   } finally {
     await connection.close();
   }
+  process.stdout.write('seed.js completed\n');
+  // Exit explicitly after the connection is closed so a residual handle can
+  // never leave the process alive and stall the startup chain.
+  process.exit(0);
 }
 
-void main();
+void main().catch((error) => {
+  process.stderr.write(`Seed failed: ${String(error)}\n`);
+  process.exit(1);
+});
