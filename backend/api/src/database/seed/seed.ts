@@ -1,4 +1,4 @@
-import { createRequire } from 'node:module';
+import { spawnSync } from 'node:child_process';
 
 import { config } from '@/config';
 import { createDatabaseConnection } from '@/database/connection';
@@ -7,22 +7,35 @@ import '@/modules/rbac/seed';
 
 import { runSeeds } from './index';
 
-// --- TEMPORARY DIAGNOSTIC (remove once the deploy is confirmed healthy) ------
-// Explicitly probe the @node-rs/argon2 native binding here, at module load,
-// BEFORE the env-specific seeds (production-admin / demo) — which import it
-// transitively — are loaded below. This runs first because those seeds are now
-// imported dynamically inside main(), so a failed native load surfaces with a
-// clear marker instead of an opaque crash before "seed.js starting".
-const requireForDiagnostics = createRequire(import.meta.url);
-try {
-  requireForDiagnostics('@node-rs/argon2');
-  process.stderr.write('ARGON2_RUNTIME_LOAD_OK\n');
-} catch (error) {
-  process.stderr.write('ARGON2_RUNTIME_LOAD_FAILED\n');
-  process.stderr.write(
-    `${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,
-  );
-}
+// --- TEMPORARY DIAGNOSTIC (child-process argon2 probe; remove after test) ----
+// Load @node-rs/argon2 in an ISOLATED child process so a native-layer crash
+// (SIGSEGV/SIGABRT) during the binding load cannot terminate this process — an
+// in-process try/catch cannot survive a native abort, only a JS throw.
+//
+// @node-rs/argon2 is NOT loaded in THIS (parent) process before the spawn:
+// seed.js's static chunk graph is pure JS, and the seed flow that would load it
+// (main → dynamic import of production-admin/demo) never runs because we exit
+// immediately after reporting the child result. The string below is passed to
+// the child; it does not load argon2 here.
+const argon2Child = spawnSync(
+  process.execPath,
+  ['-e', "require('@node-rs/argon2'); console.log('ARGON2_CHILD_OK')"],
+  { encoding: 'utf8' },
+);
+process.stdout.write(
+  [
+    `ARGON2_CHILD_STATUS=${String(argon2Child.status)}`,
+    `ARGON2_CHILD_SIGNAL=${String(argon2Child.signal)}`,
+    `ARGON2_CHILD_STDOUT=${(argon2Child.stdout || '').trim()}`,
+    `ARGON2_CHILD_STDERR=${(argon2Child.stderr || '').trim()}`,
+    `ARGON2_CHILD_SPAWN_ERROR=${argon2Child.error ? argon2Child.error.message : ''}`,
+    'ARGON2_CHILD_DIAGNOSTIC_DONE',
+    '',
+  ].join('\n'),
+);
+// Deliberately stop here so this deploy runs ONLY the diagnostic above and does
+// not enter the normal seed flow.
+process.exit(0);
 // --- END TEMPORARY DIAGNOSTIC ------------------------------------------------
 
 /**
