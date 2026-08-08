@@ -12,6 +12,11 @@ export const PERMISSIONS = {
   PERMISSIONS_READ: 'permissions.read',
   USER_PERMISSIONS_READ: 'users.permissions.read',
 
+  // Authentication account status (Phase 1). Distinct from member.* (loyalty
+  // profile lifecycle): these govern the underlying auth account (login access).
+  ACCOUNT_READ: 'account.read',
+  ACCOUNT_STATUS: 'account.status',
+
   // Member Management (Phase 13).
   MEMBER_READ: 'member.read',
   MEMBER_CREATE: 'member.create',
@@ -118,6 +123,19 @@ export const PERMISSION_DEFINITIONS: readonly PermissionDefinition[] = [
     resource: 'users',
     action: 'permissions.read',
     description: 'View effective permissions for a user.',
+  },
+  {
+    key: PERMISSIONS.ACCOUNT_READ,
+    resource: 'account',
+    action: 'read',
+    description: 'View a member’s authentication account status (login access).',
+  },
+  {
+    key: PERMISSIONS.ACCOUNT_STATUS,
+    resource: 'account',
+    action: 'status',
+    description:
+      'Change a member’s authentication account status (activate / suspend / deactivate login).',
   },
   {
     key: PERMISSIONS.MEMBER_READ,
@@ -411,6 +429,9 @@ export const PERMISSION_DEFINITIONS: readonly PermissionDefinition[] = [
 
 export const ROLES = {
   SUPER_ADMIN: 'super-admin',
+  ADMIN: 'admin',
+  PARTNER: 'partner',
+  MEMBER: 'member',
 } as const;
 
 export type RoleKey = (typeof ROLES)[keyof typeof ROLES];
@@ -429,5 +450,31 @@ export const SYSTEM_ROLE_DEFINITIONS: readonly SystemRoleDefinition[] = [
     name: 'Super Administrator',
     description: 'Full platform authorization access.',
     permissions: '*',
+  },
+  {
+    key: ROLES.ADMIN,
+    name: 'Administrator',
+    description:
+      'Operational admin. Phase 1 scope: view members and manage member/account status. Broader admin capabilities are granted in later phases.',
+    permissions: [
+      PERMISSIONS.MEMBER_READ,
+      PERMISSIONS.MEMBER_STATUS,
+      PERMISSIONS.ACCOUNT_READ,
+      PERMISSIONS.ACCOUNT_STATUS,
+    ],
+  },
+  {
+    key: ROLES.PARTNER,
+    name: 'Partner',
+    description:
+      'Referral partner. Foundation role only in Phase 1 — no partner capabilities are granted yet (added in later phases).',
+    permissions: [],
+  },
+  {
+    key: ROLES.MEMBER,
+    name: 'Member',
+    description:
+      'End-user member. Assigned automatically on public sign-up. Member self-service endpoints are authenticated (not permission-gated), so this role carries no catalog permissions in Phase 1.',
+    permissions: [],
   },
 ];

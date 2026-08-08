@@ -100,6 +100,67 @@ export class MemberService {
     return member ? this.assembleDetail(member) : null;
   }
 
+  /**
+   * Idempotently ensures a Member profile exists for an auth user and is linked
+   * via `members.user_id`. Called during sign-up so account and member identity
+   * stay linked (D5/D6). New profiles start PENDING, mirroring the unverified
+   * auth account. If an unlinked member already exists for the email (e.g.
+   * admin-precreated), it is linked rather than duplicated (implementation
+   * rule 3 — do not duplicate users/members).
+   */
+  public async provisionForUser(input: {
+    userId: string;
+    email: string;
+    firstName?: string | null;
+    lastName?: string | null;
+  }): Promise<void> {
+    const alreadyLinked = await this.members.findByUserId(input.userId);
+    if (alreadyLinked) {
+      return;
+    }
+    const byEmail = await this.members.findByEmail(input.email);
+    if (byEmail) {
+      if (byEmail.userId === null) {
+        await this.members.update(byEmail.id, { userId: input.userId, updatedBy: input.userId });
+      }
+      return;
+    }
+    const memberNumber = `M-${randomUUID().slice(0, 8).toUpperCase()}`;
+    const member = await this.members.create({
+      memberNumber,
+      userId: input.userId,
+      firstName: input.firstName ?? '',
+      lastName: input.lastName ?? '',
+      email: input.email,
+      status: 'PENDING',
+      createdBy: input.userId,
+      updatedBy: input.userId,
+    });
+    await this.statusHistory.record({
+      memberId: member.id,
+      fromStatus: null,
+      toStatus: 'PENDING',
+      reason: 'Member profile created on sign-up',
+      changedBy: input.userId,
+    });
+  }
+
+  /**
+   * Idempotently transitions a user's linked Member profile to ACTIVE on account
+   * activation (email verification). No-op if unlinked or already active (D6).
+   */
+  public async activateByUserId(userId: string): Promise<void> {
+    const member = await this.members.findByUserId(userId);
+    if (!member || member.status === 'ACTIVE') {
+      return;
+    }
+    await this.changeStatus(
+      member.id,
+      { status: 'ACTIVE', reason: 'Email verified — account activated' },
+      { userId, ipAddress: null, userAgent: null, correlationId: null },
+    );
+  }
+
   public async create(input: unknown, actor: MemberActor): Promise<MemberDetail> {
     const data = createMemberSchema.parse(input);
     if (await this.members.findByEmail(data.email)) {

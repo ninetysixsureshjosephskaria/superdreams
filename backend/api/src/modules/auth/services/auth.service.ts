@@ -4,9 +4,17 @@ import { verifyPassword, type IdentityModule, type UserResponse } from '@/module
 
 import type { LoginResult, RequestContext } from '../dto';
 import type { AuthEventBus } from '../events';
+import type { AuthorizationReaderPort } from './ports';
 import type { LoginHistoryRepository } from '../repositories';
 import { loginSchema } from '../validators';
 import type { SessionService } from './session.service';
+
+/** The `/me` response: the account plus its effective authorization. */
+export interface AuthenticatedUser {
+  user: UserResponse;
+  roles: string[];
+  permissions: string[];
+}
 
 /**
  * Orchestrates authentication using the Identity domain (no duplicated identity
@@ -14,12 +22,20 @@ import type { SessionService } from './session.service';
  * login history, and session/token issuance.
  */
 export class AuthService {
+  /** Optional collaborator; injected by the composition root (see ports.ts). */
+  private authorization: AuthorizationReaderPort | null = null;
+
   public constructor(
     private readonly identity: IdentityModule,
     private readonly sessions: SessionService,
     private readonly loginHistory: LoginHistoryRepository,
     private readonly events: AuthEventBus,
   ) {}
+
+  /** Wires the RBAC resolver adapter after all modules are registered. */
+  public setAuthorizationReader(reader: AuthorizationReaderPort): void {
+    this.authorization = reader;
+  }
 
   public async login(input: unknown, context: RequestContext): Promise<LoginResult> {
     const data = loginSchema.parse(input);
@@ -78,8 +94,17 @@ export class AuthService {
     await this.events.publish({ type: 'LogoutCompleted', userId, sessionId, at: new Date() });
   }
 
-  public async me(userId: string): Promise<UserResponse | null> {
-    return this.identity.users.getById(userId);
+  public async me(userId: string): Promise<AuthenticatedUser | null> {
+    const user = await this.identity.users.getById(userId);
+    if (!user) {
+      return null;
+    }
+    // Enrich with effective roles/permissions so the frontend guards on real
+    // authorization (D10). Falls back to empty sets if the resolver is unwired.
+    const authorization = this.authorization
+      ? await this.authorization.resolve(userId)
+      : { roleKeys: [], permissionKeys: [] };
+    return { user, roles: authorization.roleKeys, permissions: authorization.permissionKeys };
   }
 
   private async assertNotLockedOut(email: string): Promise<void> {

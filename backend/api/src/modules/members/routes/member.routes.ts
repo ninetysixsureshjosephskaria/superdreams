@@ -7,7 +7,7 @@ import { PERMISSIONS, requirePermission, requireRole, type GuardDeps } from '@/m
 import { sendSuccess } from '@/utils';
 
 import { MemberController } from '../controllers';
-import type { MemberService } from '../services';
+import type { MemberAccountService, MemberService } from '../services';
 
 /** Default number of demo members generated when no explicit count is provided. */
 const DEMO_MEMBER_COUNT = 15;
@@ -155,11 +155,34 @@ const updateMeSchema: FastifySchema = {
 
 export interface RegisterMemberRoutesOptions {
   service: MemberService;
+  /** Authentication account status control (distinct from member profile status). */
+  accountService: MemberAccountService;
   authenticate: preHandlerAsyncHookHandler;
   guardDeps: GuardDeps;
   /** Database handle — used by the Super Admin demo-member generator. */
   db: Database;
 }
+
+/** Body schema for changing a member's authentication account status. */
+const accountStatusSchema: FastifySchema = {
+  tags: ['Members'],
+  summary: 'Change a member’s authentication account status (login access)',
+  security: secured,
+  params: {
+    type: 'object',
+    properties: { id: { type: 'string', format: 'uuid' } },
+    required: ['id'],
+  },
+  body: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['status'],
+    properties: {
+      status: { type: 'string', enum: ['ACTIVE', 'INACTIVE', 'SUSPENDED', 'DEACTIVATED'] },
+      reason: { type: 'string', maxLength: 500 },
+    },
+  },
+};
 
 /**
  * Registers member routes under `/api/v1/members`. Admin routes run
@@ -170,7 +193,7 @@ export function registerMemberRoutes(
   app: FastifyInstance,
   options: RegisterMemberRoutesOptions,
 ): void {
-  const { service, authenticate, guardDeps, db } = options;
+  const { service, accountService, authenticate, guardDeps, db } = options;
   const controller = new MemberController(service);
 
   const protect = (permission: string): preHandlerAsyncHookHandler[] => [
@@ -248,6 +271,33 @@ export function registerMemberRoutes(
         '/:id/status',
         { schema: statusSchema, preHandler: protect(PERMISSIONS.MEMBER_STATUS) },
         controller.changeStatus,
+      );
+
+      // Authentication account status (login access) — distinct from member
+      // profile status (D5). Reads/changes the underlying auth account.
+      instance.get(
+        '/:id/account',
+        { schema: idParamsSchema, preHandler: protect(PERMISSIONS.ACCOUNT_READ) },
+        async (request, reply) => {
+          const { id } = request.params as { id: string };
+          return sendSuccess(reply, await accountService.getByMemberId(id));
+        },
+      );
+      instance.patch(
+        '/:id/account-status',
+        { schema: accountStatusSchema, preHandler: protect(PERMISSIONS.ACCOUNT_STATUS) },
+        async (request, reply) => {
+          const { id } = request.params as { id: string };
+          const context = requireAuth(request);
+          const userAgent = request.headers['user-agent'];
+          const actor = {
+            userId: context.userId,
+            ipAddress: request.ip.length > 0 ? request.ip : null,
+            userAgent: typeof userAgent === 'string' ? userAgent : null,
+            correlationId: null,
+          };
+          return sendSuccess(reply, await accountService.changeStatus(id, request.body, actor));
+        },
       );
       instance.delete(
         '/:id',

@@ -31,9 +31,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           accessToken: refreshed.accessToken,
           refreshToken: refreshed.refreshToken,
         });
-        const user = await authApi.me();
+        const me = await authApi.me();
         if (!active) return;
-        store.completeSession({ user });
+        store.completeSession({ user: me.user, permissions: me.permissions });
       } catch {
         if (active) store.clear();
       }

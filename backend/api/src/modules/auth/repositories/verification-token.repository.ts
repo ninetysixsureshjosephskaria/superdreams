@@ -1,4 +1,4 @@
-import { eq, type InferSelectModel } from 'drizzle-orm';
+import { and, eq, isNull, type InferSelectModel } from 'drizzle-orm';
 
 import type { Database } from '@/database/client';
 import { emailVerificationTokens } from '@/database/schema';
@@ -11,6 +11,19 @@ export class EmailVerificationTokenRepository {
 
   public async create(userId: string, tokenHash: string, expiresAt: Date): Promise<void> {
     await this.db.insert(emailVerificationTokens).values({ userId, tokenHash, expiresAt });
+  }
+
+  /**
+   * Invalidates every still-pending (unverified) activation token for a user by
+   * deleting it. Called before issuing a new token so a resend supersedes the
+   * previous activation link (single active token per account).
+   */
+  public async invalidateAllForUser(userId: string): Promise<void> {
+    await this.db
+      .delete(emailVerificationTokens)
+      .where(
+        and(eq(emailVerificationTokens.userId, userId), isNull(emailVerificationTokens.verifiedAt)),
+      );
   }
 
   public async findByHash(tokenHash: string): Promise<EmailVerificationTokenRow | null> {

@@ -11,8 +11,10 @@ import type {
   AddDocumentInput,
   AddNoteInput,
   ApiError,
+  ChangeAccountStatusInput,
   ChangeStatusInput,
   CreateMemberInput,
+  MemberAccountView,
   GenerateDemoMembersResult,
   ListMembersParams,
   MemberActivityData,
@@ -99,6 +101,24 @@ export function useChangeMemberStatus(
       void queryClient.invalidateQueries({ queryKey: memberKeys.detail(id) });
       void queryClient.invalidateQueries({ queryKey: memberKeys.statusHistory(id) });
       void queryClient.invalidateQueries({ queryKey: memberKeys.lists() });
+    },
+  });
+}
+
+/** The member's authentication account status (login access) — distinct from member.status. */
+export function useMemberAccount(id: string): UseQueryResult<MemberAccountView, ApiError> {
+  return useQuery({ queryKey: memberKeys.account(id), queryFn: () => membersApi.getAccount(id) });
+}
+
+export function useChangeMemberAccountStatus(
+  id: string,
+): UseMutationResult<MemberAccountView, ApiError, ChangeAccountStatusInput> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ChangeAccountStatusInput) => membersApi.changeAccountStatus(id, input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: memberKeys.account(id) });
+      void queryClient.invalidateQueries({ queryKey: memberKeys.detail(id) });
     },
   });
 }

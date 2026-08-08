@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           accessToken: refreshed.accessToken,
           refreshToken: refreshed.refreshToken,
         });
-        const user = await authApi.me();
+        const { user } = await authApi.me();
         const { permissions, roles } = user.mustChangePassword
           ? { permissions: [], roles: [] }
           : await loadPermissions(user.id);

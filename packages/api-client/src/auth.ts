@@ -57,6 +57,13 @@ export interface ChangePasswordInput {
   newPassword: string;
 }
 
+/** The authenticated user plus their effective roles/permissions (`/auth/me`). */
+export interface AuthenticatedUser {
+  user: AuthUser;
+  roles: string[];
+  permissions: string[];
+}
+
 export interface UserPermissions {
   userId: string;
   roles: string[];
@@ -97,7 +104,7 @@ export interface AuthApi {
   /** Rotates the refresh token. Token comes from the body or the httpOnly cookie. */
   refresh(refreshToken?: string): Promise<RefreshResult>;
   logout(): Promise<void>;
-  me(): Promise<AuthUser>;
+  me(): Promise<AuthenticatedUser>;
   changePassword(input: ChangePasswordInput): Promise<{ message: string }>;
   /** Effective roles + permissions for a user (requires users.permissions.read). */
   getUserPermissions(userId: string): Promise<UserPermissions>;
@@ -132,8 +139,8 @@ export function createAuthApi(client: AxiosInstance): AuthApi {
       await client.post(`${base}/logout`);
     },
     async me() {
-      const response = await client.get<Envelope<{ user: AuthUser }>>(`${base}/me`);
-      return response.data.data.user;
+      const response = await client.get<Envelope<AuthenticatedUser>>(`${base}/me`);
+      return response.data.data;
     },
     async changePassword(input) {
       const response = await client.post<Envelope<{ message: string }>>(

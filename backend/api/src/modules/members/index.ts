@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Database } from '@/database';
 import { createAuthModule } from '@/modules/auth';
 import { createAuthenticate } from '@/modules/auth/middleware';
+import { createIdentityModule } from '@/modules/identity';
 import { createRbacModule, type GuardDeps } from '@/modules/rbac';
 
 import { MemberEventBus } from './events';
@@ -18,11 +19,13 @@ import {
   MemberStatusHistoryRepository,
 } from './repositories';
 import { registerMemberRoutes } from './routes';
-import { MemberService } from './services';
+import { MemberAccountService, MemberService } from './services';
 
 export interface MembersModule {
   events: MemberEventBus;
   service: MemberService;
+  /** Authentication account status for a member (distinct from member.status). */
+  accountService: MemberAccountService;
   repositories: {
     members: MemberRepository;
     profiles: MemberProfileRepository;
@@ -59,9 +62,20 @@ export function createMembersModule(
     events,
   );
 
+  // Account (auth) status control on the Members surface (D5). Reuses Identity
+  // for the transition, the shared audit repository for the sensitive change, and
+  // the auth SessionService to revoke sessions on suspend/deactivate (D7).
+  const accountService = new MemberAccountService(
+    memberRepository,
+    createIdentityModule(db),
+    auditRepository,
+    createAuthModule(db).sessions,
+  );
+
   return {
     events,
     service,
+    accountService,
     repositories: {
       members: memberRepository,
       profiles: profileRepository,
@@ -86,7 +100,13 @@ export function registerMembersModule(app: FastifyInstance): MembersModule {
   const rbac = createRbacModule(app.db, { redis: app.redis });
   const guardDeps: GuardDeps = { authorization: rbac.authorization, events: rbac.events };
 
-  registerMemberRoutes(app, { service: module.service, authenticate, guardDeps, db: app.db });
+  registerMemberRoutes(app, {
+    service: module.service,
+    accountService: module.accountService,
+    authenticate,
+    guardDeps,
+    db: app.db,
+  });
   return module;
 }
 

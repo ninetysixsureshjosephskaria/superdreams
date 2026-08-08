@@ -5,6 +5,7 @@ export { createAuthApi } from './auth';
 export type {
   AuthApi,
   AuthUser,
+  AuthenticatedUser,
   UserStatus,
   LoginInput,
   AuthSession,
@@ -41,6 +42,9 @@ export type {
   AddDocumentInput,
   UpdateOwnProfileInput,
   GenerateDemoMembersResult,
+  MemberAccountView,
+  ChangeAccountStatusInput,
+  AuthAccountStatus,
 } from './members';
 export { createWalletApi } from './wallet';
 export type {

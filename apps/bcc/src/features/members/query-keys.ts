@@ -11,4 +11,5 @@ export const memberKeys = {
   notes: (id: string) => [...memberKeys.detail(id), 'notes'] as const,
   documents: (id: string) => [...memberKeys.detail(id), 'documents'] as const,
   statusHistory: (id: string) => [...memberKeys.detail(id), 'status-history'] as const,
+  account: (id: string) => [...memberKeys.detail(id), 'account'] as const,
 };

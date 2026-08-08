@@ -26,8 +26,10 @@ export function useAuth(): UseAuthResult {
     const result = await authApi.login(input);
     store.setRemember(input.rememberMe ?? false);
     store.setTokens({ accessToken: result.accessToken, refreshToken: result.refreshToken });
-    store.completeSession({ user: result.user });
-    return result.user;
+    // Load effective roles/permissions so the portal guards on real RBAC (D10).
+    const me = await authApi.me();
+    store.completeSession({ user: me.user, permissions: me.permissions });
+    return me.user;
   }, []);
 
   const logout = useCallback(async (): Promise<void> => {

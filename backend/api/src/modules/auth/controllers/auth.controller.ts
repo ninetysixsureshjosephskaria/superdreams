@@ -107,8 +107,17 @@ export class AuthController {
 
   public me = async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {
     const context = requireAuth(request);
-    const user = await this.auth.me(context.userId);
-    return sendSuccess(reply, { user });
+    const result = await this.auth.me(context.userId);
+    if (!result) {
+      throw new UnauthorizedError('Not authenticated.');
+    }
+    // Returns the account plus its effective roles/permissions so the frontend
+    // can guard on real authorization (D10).
+    return sendSuccess(reply, {
+      user: result.user,
+      roles: result.roles,
+      permissions: result.permissions,
+    });
   };
 
   public forgotPassword = async (

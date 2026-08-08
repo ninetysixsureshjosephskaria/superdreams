@@ -175,12 +175,34 @@ export interface GenerateDemoMembersResult {
   message: string;
 }
 
+/** Authentication account status (login access) — distinct from member.status. */
+export type AuthAccountStatus = 'PENDING' | 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'DEACTIVATED';
+
+/** A member's underlying auth account view. */
+export interface MemberAccountView {
+  memberId: string;
+  linked: boolean;
+  userId: string | null;
+  accountStatus: AuthAccountStatus | null;
+  emailVerified: boolean;
+  email: string | null;
+}
+
+export interface ChangeAccountStatusInput {
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'DEACTIVATED';
+  reason?: string;
+}
+
 export interface MembersApi {
   list(params?: ListMembersParams): Promise<PaginatedMembers>;
   get(id: string): Promise<MemberDetail>;
   create(input: CreateMemberInput): Promise<MemberDetail>;
   update(id: string, input: UpdateMemberInput): Promise<MemberDetail>;
   changeStatus(id: string, input: ChangeStatusInput): Promise<MemberDetail>;
+  /** Read the member's authentication account status (requires account.read). */
+  getAccount(id: string): Promise<MemberAccountView>;
+  /** Change the member's authentication account status (requires account.status). */
+  changeAccountStatus(id: string, input: ChangeAccountStatusInput): Promise<MemberAccountView>;
   archive(id: string): Promise<void>;
   listActivity(id: string): Promise<MemberActivityData[]>;
   listStatusHistory(id: string): Promise<MemberStatusHistoryData[]>;
@@ -216,6 +238,17 @@ export function createMembersApi(client: AxiosInstance): MembersApi {
     },
     async changeStatus(id, input) {
       const response = await client.patch<Envelope<MemberDetail>>(`${base}/${id}/status`, input);
+      return response.data.data;
+    },
+    async getAccount(id) {
+      const response = await client.get<Envelope<MemberAccountView>>(`${base}/${id}/account`);
+      return response.data.data;
+    },
+    async changeAccountStatus(id, input) {
+      const response = await client.patch<Envelope<MemberAccountView>>(
+        `${base}/${id}/account-status`,
+        input,
+      );
       return response.data.data;
     },
     async archive(id) {

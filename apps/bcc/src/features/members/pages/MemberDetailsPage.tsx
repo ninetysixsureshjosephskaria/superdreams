@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { PageHeader } from '@/components/page-header';
+import { usePermissions } from '@/hooks';
 import { useNotificationStore } from '@/store';
 import type { MemberDetail } from '@superdreams/api-client';
 import {
@@ -24,8 +25,10 @@ import {
   useAddMemberDocument,
   useAddMemberNote,
   useArchiveMember,
+  useChangeMemberAccountStatus,
   useChangeMemberStatus,
   useMember,
+  useMemberAccount,
   useMemberActivity,
   useMemberDocuments,
   useMemberNotes,
@@ -82,6 +85,98 @@ function OverviewPanel({ member }: { member: MemberDetail }) {
         ) : null}
       </ContentCard>
     </div>
+  );
+}
+
+/**
+ * Authentication ACCOUNT status (login access) for the member — deliberately
+ * separate from the member profile status above so the two are never confused
+ * (D5). Suspend/Deactivate block sign-in server-side; the change is audited.
+ */
+function AccountStatusCard({ id }: { id: string }) {
+  const query = useMemberAccount(id);
+  const changeAccount = useChangeMemberAccountStatus(id);
+  const notify = useNotificationStore((state) => state.notify);
+  const { can } = usePermissions();
+  const canManage = can('account.status');
+
+  const setAccount = (status: 'ACTIVE' | 'SUSPENDED' | 'DEACTIVATED', label: string): void => {
+    changeAccount.mutate(
+      { status },
+      {
+        onSuccess: () => {
+          notify({ variant: 'success', title: `Login ${label}` });
+        },
+        onError: (error) => {
+          notify({
+            variant: 'error',
+            title: 'Account status change failed',
+            description: error.message,
+          });
+        },
+      },
+    );
+  };
+
+  return (
+    <ContentCard title="Login / account status">
+      <p className="mb-3 text-xs text-muted-foreground">
+        Controls whether this member can sign in. Separate from the member profile status.
+      </p>
+      {query.isPending ? (
+        <Spinner label="Loading account" />
+      ) : !query.data || !query.data.linked ? (
+        <EmptyState
+          title="No login account"
+          description="This member has no linked sign-in account."
+        />
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Account status" value={query.data.accountStatus ?? '—'} />
+            <Field label="Email verified" value={query.data.emailVerified ? 'Yes' : 'No'} />
+          </div>
+          {canManage ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={query.data.accountStatus === 'ACTIVE' || changeAccount.isPending}
+                onClick={() => {
+                  setAccount('ACTIVE', 'reactivated');
+                }}
+              >
+                Reactivate
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={query.data.accountStatus === 'SUSPENDED' || changeAccount.isPending}
+                onClick={() => {
+                  setAccount('SUSPENDED', 'suspended');
+                }}
+              >
+                Suspend
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={query.data.accountStatus === 'DEACTIVATED' || changeAccount.isPending}
+                onClick={() => {
+                  setAccount('DEACTIVATED', 'deactivated');
+                }}
+              >
+                Deactivate
+              </Button>
+            </div>
+          ) : (
+            <p className="mt-3 text-xs text-muted-foreground">
+              You do not have permission to change account status.
+            </p>
+          )}
+        </>
+      )}
+    </ContentCard>
   );
 }
 
@@ -349,7 +444,16 @@ export default function MemberDetailsPage() {
 
       <Tabs
         items={[
-          { value: 'overview', label: 'Overview', content: <OverviewPanel member={member} /> },
+          {
+            value: 'overview',
+            label: 'Overview',
+            content: (
+              <div className="space-y-4">
+                <OverviewPanel member={member} />
+                <AccountStatusCard id={member.id} />
+              </div>
+            ),
+          },
           { value: 'activity', label: 'Activity', content: <ActivityPanel id={member.id} /> },
           { value: 'notes', label: 'Notes', content: <NotesPanel id={member.id} /> },
           { value: 'documents', label: 'Documents', content: <DocumentsPanel id={member.id} /> },
