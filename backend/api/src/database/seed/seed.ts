@@ -1,13 +1,29 @@
+import { createRequire } from 'node:module';
+
 import { config } from '@/config';
 import { createDatabaseConnection } from '@/database/connection';
-// Side-effect imports: register seeds before running. RBAC first so the demo
-// seed can rely on the catalog (permissions + super-admin role) existing.
+// Side-effect import: register the RBAC catalog seed (no native dependencies).
 import '@/modules/rbac/seed';
 
 import { runSeeds } from './index';
-// Registered after the runner import to avoid a circular import at module load.
-import './production-admin';
-import './demo';
+
+// --- TEMPORARY DIAGNOSTIC (remove once the deploy is confirmed healthy) ------
+// Explicitly probe the @node-rs/argon2 native binding here, at module load,
+// BEFORE the env-specific seeds (production-admin / demo) — which import it
+// transitively — are loaded below. This runs first because those seeds are now
+// imported dynamically inside main(), so a failed native load surfaces with a
+// clear marker instead of an opaque crash before "seed.js starting".
+const requireForDiagnostics = createRequire(import.meta.url);
+try {
+  requireForDiagnostics('@node-rs/argon2');
+  process.stderr.write('ARGON2_RUNTIME_LOAD_OK\n');
+} catch (error) {
+  process.stderr.write('ARGON2_RUNTIME_LOAD_FAILED\n');
+  process.stderr.write(
+    `${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`,
+  );
+}
+// --- END TEMPORARY DIAGNOSTIC ------------------------------------------------
 
 /**
  * Standalone seed runner (`pnpm db:seed`). Connects, applies the seeds
@@ -21,6 +37,13 @@ const SEED_LOCK_TIMEOUT_MS = 15_000;
 
 async function main(): Promise<void> {
   process.stdout.write('seed.js starting\n');
+  // Register the env-specific seeds. Imported dynamically (not statically at the
+  // top of the file) so their transitive @node-rs/argon2 import is not hoisted
+  // above the diagnostic probe above. Registration order is unchanged:
+  // rbac-catalog (imported statically) -> production-admin -> demo.
+  await import('./production-admin');
+  await import('./demo');
+
   const connection = createDatabaseConnection({
     statementTimeoutMs: SEED_STATEMENT_TIMEOUT_MS,
     lockTimeoutMs: SEED_LOCK_TIMEOUT_MS,

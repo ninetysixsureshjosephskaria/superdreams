@@ -22,7 +22,7 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   minify: false,
-  splitting: false,
+  splitting: true,
   bundle: true,
   skipNodeModulesBundle: true,
   noExternal: [/^@superdreams\//],
