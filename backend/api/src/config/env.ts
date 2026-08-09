@@ -70,6 +70,14 @@ const EnvSchema = z
     // interval only re-checks, it never double-credits.
     SCHEDULER_ENABLED: booleanFromString.optional(),
     SCHEDULER_INTERVAL_MS: z.coerce.number().int().min(1000).default(3_600_000),
+
+    // Break-glass recovery for the bootstrap admin. When set (non-empty), the
+    // production-admin seed resets that account's password to this value and
+    // reactivates it (status ACTIVE + email verified) on the NEXT seed run.
+    // It NEVER touches the admin password when unset, so a normal deploy does
+    // not overwrite credentials. Remove it after recovery — while present it
+    // re-applies on every deploy.
+    ADMIN_PASSWORD_RESET: z.string().min(8).optional(),
   })
   .superRefine((environment, ctx) => {
     if (

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useSearchParams } from 'react-router-dom';
 
 import { PageHeader } from '@/components/page-header';
 import { usePermissions } from '@/hooks';
@@ -17,6 +18,7 @@ import {
   ContentCard,
   DataTable,
   FormField,
+  Icon,
   Input,
   LoadingScreen,
   Modal,
@@ -24,7 +26,15 @@ import {
   type DataTableColumn,
 } from '@superdreams/ui';
 
-import { bpsToPct, usd } from '../format';
+import {
+  bpsToPct,
+  buildMonthGrid,
+  currentMonth,
+  formatMonthLabel,
+  isMonthKey,
+  shiftMonth,
+  usd,
+} from '../format';
 import {
   useDistributeProfit,
   usePlanSchedule,
@@ -34,14 +44,11 @@ import {
   useSetScheduleDay,
 } from '../hooks';
 
-/** Current month as `YYYY-MM` (local time). */
-function currentMonth(): string {
-  return new Date().toISOString().slice(0, 7);
-}
-
 function pctToBps(pct: number): number {
   return Math.round(pct * 100);
 }
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 
 // --- Plan dialog -------------------------------------------------------------
 
@@ -367,6 +374,142 @@ function DailyTable({
   );
 }
 
+// --- Calendar ----------------------------------------------------------------
+
+/** One in-month day cell's body: rates, off/status badges, time, distributed marker. */
+function DayCellContent({
+  cell,
+  data,
+  status,
+  distributed,
+}: {
+  cell: { dayNum: number; dayStr: string };
+  data: ProfitScheduleDayData | undefined;
+  status: ProfitScheduleData['status'];
+  distributed: boolean;
+}) {
+  return (
+    <div className="flex h-full flex-col gap-1">
+      <div className="flex items-start justify-between">
+        <span className="text-sm font-semibold">{cell.dayNum}</span>
+        {data ? (
+          <Badge variant={status === 'PUBLISHED' ? 'success' : 'secondary'} className="text-[10px]">
+            {status === 'PUBLISHED' ? 'Published' : 'Draft'}
+          </Badge>
+        ) : null}
+      </div>
+      {data ? (
+        <div className="space-y-0.5 text-xs text-muted-foreground">
+          {data.off ? (
+            <Badge variant="secondary" className="text-[10px]">
+              Off
+            </Badge>
+          ) : (
+            <>
+              <div>M {bpsToPct(data.memberBps)}</div>
+              <div>P {bpsToPct(data.partnerBps)}</div>
+            </>
+          )}
+          {data.distributeAt ? <div className="tabular-nums">{data.distributeAt}</div> : null}
+          {distributed ? (
+            <Badge variant="info" className="text-[10px]">
+              Distributed
+            </Badge>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ProfitCalendar({
+  schedule,
+  distributedDays,
+  onEditDay,
+  onDistribute,
+}: {
+  schedule: ProfitScheduleData;
+  distributedDays: Set<string>;
+  onEditDay: (day: ProfitScheduleDayData) => void;
+  onDistribute: (day: ProfitScheduleDayData) => void;
+}) {
+  const { can } = usePermissions();
+  const canSchedule = can('profit.schedule');
+  const canDistribute = can('profit.distribute');
+  const isDraft = schedule.status === 'DRAFT';
+  const isPublished = schedule.status === 'PUBLISHED';
+  const dayMap = new Map(schedule.days.map((d) => [d.day, d]));
+  const cells = buildMonthGrid(schedule.month);
+
+  const cellBase = 'min-h-[92px] rounded-md border border-border bg-card p-2 text-left';
+
+  return (
+    <ContentCard
+      title={`Calendar — ${formatMonthLabel(schedule.month)}`}
+      description="Backend-generated per-day rates and times. Click a draft day to fine-tune it."
+    >
+      <div className="grid grid-cols-7 gap-2">
+        {WEEKDAYS.map((weekday) => (
+          <div
+            key={weekday}
+            className="pb-1 text-center text-xs font-medium uppercase text-muted-foreground"
+          >
+            {weekday}
+          </div>
+        ))}
+        {cells.map((cell, index) => {
+          if (!cell) {
+            return <div key={`pad-${index}`} aria-hidden className="min-h-[92px]" />;
+          }
+          const data = dayMap.get(cell.dayStr);
+          const distributed = distributedDays.has(cell.dayStr);
+          const editable = isDraft && canSchedule && Boolean(data);
+          const showDistribute = isPublished && canDistribute && Boolean(data) && !data?.off;
+
+          const body = (
+            <DayCellContent
+              cell={cell}
+              data={data}
+              status={schedule.status}
+              distributed={distributed}
+            />
+          );
+
+          if (editable && data) {
+            return (
+              <button
+                key={cell.dayStr}
+                type="button"
+                aria-label={`Edit ${cell.dayStr}`}
+                onClick={() => onEditDay(data)}
+                className={`${cellBase} transition-colors hover:border-primary hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
+              >
+                {body}
+              </button>
+            );
+          }
+
+          return (
+            <div key={cell.dayStr} className={cellBase}>
+              {body}
+              {showDistribute && data ? (
+                <Button
+                  size="xs"
+                  variant="destructive"
+                  className="mt-2 w-full"
+                  onClick={() => onDistribute(data)}
+                >
+                  Distribute
+                </Button>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </ContentCard>
+  );
+}
+
 // --- History -----------------------------------------------------------------
 
 function HistoryCard({ month }: { month: string }) {
@@ -413,7 +556,21 @@ function HistoryCard({ month }: { month: string }) {
 
 /** Admin daily-profit configuration & distribution (requires profit.schedule). */
 export default function ProfitPage() {
-  const [month, setMonth] = useState(currentMonth());
+  const [searchParams, setSearchParams] = useSearchParams();
+  const monthParam = searchParams.get('month');
+  const month = monthParam && isMonthKey(monthParam) ? monthParam : currentMonth();
+
+  function setMonth(next: string) {
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev);
+        params.set('month', next);
+        return params;
+      },
+      { replace: true },
+    );
+  }
+
   const query = useProfitSchedule(month);
   const publish = usePublishSchedule();
   const distribute = useDistributeProfit();
@@ -422,11 +579,21 @@ export default function ProfitPage() {
   const canSchedule = can('profit.schedule');
   const canDistribute = can('profit.distribute');
 
+  const [view, setView] = useState<'calendar' | 'table'>('calendar');
   const [planOpen, setPlanOpen] = useState(false);
   const [editDay, setEditDay] = useState<ProfitScheduleDayData | null>(null);
   const [confirmPublish, setConfirmPublish] = useState(false);
   const [pendingDistribute, setPendingDistribute] = useState<ProfitScheduleDayData | null>(null);
   const submittingRef = useRef(false);
+
+  // History is authoritative for which days are already distributed. It is gated
+  // on `profit.distribute` (same as the backend history route) and shares its
+  // React Query cache key with the HistoryCard below.
+  const history = useProfitHistory(
+    { from: `${month}-01`, to: `${month}-31` },
+    canDistribute && isMonthKey(month),
+  );
+  const distributedDays = new Set((history.data ?? []).map((d) => d.day));
 
   const noSchedule = query.isError && query.error.status === 404;
 
@@ -479,14 +646,41 @@ export default function ProfitPage() {
         title="Daily profit"
         description="Plan, publish and distribute the monthly daily-profit schedule"
         actions={
-          <FormField label="Month">
-            <Input
-              aria-label="Schedule month"
-              type="month"
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
-            />
-          </FormField>
+          <div className="flex flex-wrap items-end gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              aria-label="Previous month"
+              onClick={() => setMonth(shiftMonth(month, -1))}
+            >
+              <Icon name="chevron-left" size="sm" />
+            </Button>
+            <div
+              data-testid="current-month-label"
+              className="min-w-[9rem] text-center text-base font-semibold"
+            >
+              {formatMonthLabel(month)}
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              aria-label="Next month"
+              onClick={() => setMonth(shiftMonth(month, 1))}
+            >
+              <Icon name="chevron-right" size="sm" />
+            </Button>
+            <FormField label="Jump to month">
+              <Input
+                aria-label="Schedule month"
+                type="month"
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+              />
+            </FormField>
+            <Button size="sm" variant="ghost" onClick={() => setMonth(currentMonth())}>
+              This month
+            </Button>
+          </div>
         }
       />
 
@@ -495,7 +689,7 @@ export default function ProfitPage() {
       ) : noSchedule ? (
         <ContentCard title={`No schedule for ${month}`}>
           <p className="mb-4 text-sm text-muted-foreground">
-            No daily-profit schedule has been planned for {month} yet.
+            No daily-profit schedule has been planned for {formatMonthLabel(month)} yet.
           </p>
           {canSchedule ? (
             <Button onClick={() => setPlanOpen(true)}>Plan schedule</Button>
@@ -516,11 +710,38 @@ export default function ProfitPage() {
             onReplan={() => setPlanOpen(true)}
             onPublish={() => setConfirmPublish(true)}
           />
-          <DailyTable
-            schedule={query.data}
-            onEditDay={(day) => setEditDay(day)}
-            onDistribute={(day) => setPendingDistribute(day)}
-          />
+          <div className="flex justify-end gap-2">
+            <Button
+              size="sm"
+              variant={view === 'calendar' ? 'primary' : 'outline'}
+              aria-pressed={view === 'calendar'}
+              onClick={() => setView('calendar')}
+            >
+              Calendar view
+            </Button>
+            <Button
+              size="sm"
+              variant={view === 'table' ? 'primary' : 'outline'}
+              aria-pressed={view === 'table'}
+              onClick={() => setView('table')}
+            >
+              Table view
+            </Button>
+          </div>
+          {view === 'calendar' ? (
+            <ProfitCalendar
+              schedule={query.data}
+              distributedDays={distributedDays}
+              onEditDay={(day) => setEditDay(day)}
+              onDistribute={(day) => setPendingDistribute(day)}
+            />
+          ) : (
+            <DailyTable
+              schedule={query.data}
+              onEditDay={(day) => setEditDay(day)}
+              onDistribute={(day) => setPendingDistribute(day)}
+            />
+          )}
           {canDistribute ? <HistoryCard month={month} /> : null}
         </div>
       )}

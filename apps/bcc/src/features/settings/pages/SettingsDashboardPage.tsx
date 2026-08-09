@@ -7,6 +7,7 @@ import { useNotificationStore } from '@/store';
 import type { SettingData } from '@superdreams/api-client';
 import { Alert, Button, ContentCard, Input, Select, Spinner, Switch } from '@superdreams/ui';
 
+import { ChangePasswordCard } from '../components/ChangePasswordCard';
 import { useSettingCategories, useSettings, useUpdateSettings } from '../hooks';
 
 /** Renders a single setting as the appropriate control for its value type. */
@@ -236,6 +237,11 @@ export default function SettingsDashboardPage() {
           ))}
         </ContentCard>
       )}
+
+      <section className="mt-8">
+        <h2 className="mb-3 text-lg font-semibold">Security</h2>
+        <ChangePasswordCard />
+      </section>
     </>
   );
 }

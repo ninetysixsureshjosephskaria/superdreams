@@ -83,6 +83,11 @@ export const config = {
     enabled: env.SCHEDULER_ENABLED ?? env.NODE_ENV !== 'test',
     intervalMs: env.SCHEDULER_INTERVAL_MS,
   },
+  admin: {
+    // Break-glass one-time password recovery for the bootstrap admin (see env.ts).
+    // `null` = disabled (normal deploys never reset the admin password).
+    passwordReset: env.ADMIN_PASSWORD_RESET ?? null,
+  },
 } as const;
 
 export type Config = typeof config;

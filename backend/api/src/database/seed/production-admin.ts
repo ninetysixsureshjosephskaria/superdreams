@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 
+import { config } from '@/config';
 import type { Database } from '@/database/client';
 import { roles, userRoles, users } from '@/database/schema';
 import { hashPassword } from '@/modules/identity/services';
@@ -23,11 +24,28 @@ import { registerSeed } from './index';
 export const ADMIN_EMAIL = 'admin@superdreams.com';
 export const ADMIN_INITIAL_PASSWORD = 'ChangeMe123!';
 
-async function seedProductionAdmin(db: Database): Promise<void> {
+/**
+ * Seeds/repairs the bootstrap administrator.
+ *
+ * Normal deploy (`resetPassword` undefined): create-if-missing with the default
+ * initial password, and always re-assert the super-admin role. An EXISTING
+ * admin's password/status/verification are NEVER touched — deploys don't
+ * overwrite credentials.
+ *
+ * Break-glass recovery (`resetPassword` set, from `ADMIN_PASSWORD_RESET`):
+ * additionally reset the admin to a known-good login state — password =
+ * `resetPassword`, status ACTIVE, email verified, `mustChangePassword` false.
+ * This is the only path that overwrites an existing admin password, and it runs
+ * only while the env var is present (operator sets it, redeploys once, then
+ * removes it). It is not a backdoor and does not weaken auth or RBAC.
+ */
+export async function seedProductionAdmin(
+  db: Database,
+  options: { resetPassword?: string | undefined } = {},
+): Promise<void> {
   // Ensure the RBAC catalog (permissions + super-admin role) exists first.
   await syncRbacCatalog(db);
 
-  // Find the admin, or create it (only sets the initial password on creation).
   const existing = await db
     .select({ id: users.id })
     .from(users)
@@ -36,7 +54,9 @@ async function seedProductionAdmin(db: Database): Promise<void> {
 
   let adminId = existing[0]?.id;
   if (!adminId) {
-    const passwordHash = await hashPassword(ADMIN_INITIAL_PASSWORD);
+    // Fresh install: seed with the recovery password when supplied, else default.
+    const initialPassword = options.resetPassword ?? ADMIN_INITIAL_PASSWORD;
+    const passwordHash = await hashPassword(initialPassword);
     const inserted = await db
       .insert(users)
       .values({
@@ -51,6 +71,22 @@ async function seedProductionAdmin(db: Database): Promise<void> {
       })
       .returning({ id: users.id });
     adminId = inserted[0]?.id;
+  } else if (options.resetPassword) {
+    // Break-glass recovery of an EXISTING admin — never runs on a normal deploy.
+    const passwordHash = await hashPassword(options.resetPassword);
+    await db
+      .update(users)
+      .set({
+        passwordHash,
+        status: 'ACTIVE',
+        emailVerifiedAt: new Date(),
+        mustChangePassword: false,
+      })
+      .where(eq(users.id, adminId));
+    process.stdout.write(
+      '[seed] production-admin: ADMIN_PASSWORD_RESET applied — password reset and ' +
+        'account reactivated. Remove ADMIN_PASSWORD_RESET now to prevent re-applying.\n',
+    );
   }
   if (!adminId) {
     return;
@@ -73,5 +109,8 @@ async function seedProductionAdmin(db: Database): Promise<void> {
 registerSeed({
   name: 'production-admin',
   environments: ['development', 'staging', 'production'],
-  run: seedProductionAdmin,
+  run: (db) =>
+    seedProductionAdmin(db, {
+      resetPassword: config.admin.passwordReset ?? undefined,
+    }),
 });

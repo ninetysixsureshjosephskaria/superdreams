@@ -26,6 +26,11 @@ vi.mock('../api', () => ({
   },
 }));
 
+/** Current month as `YYYY-MM` — mirrors the page's own default. */
+function currentMonth(): string {
+  return new Date().toISOString().slice(0, 7);
+}
+
 const DRAFT: ProfitScheduleData = {
   month: '2026-08',
   status: 'DRAFT',
@@ -34,7 +39,7 @@ const DRAFT: ProfitScheduleData = {
   publishedAt: null,
   days: [
     { day: '2026-08-01', memberBps: 100, partnerBps: 50, distributeAt: '23:30', off: false },
-    { day: '2026-08-02', memberBps: 100, partnerBps: 50, distributeAt: '23:45', off: false },
+    { day: '2026-08-02', memberBps: 0, partnerBps: 0, distributeAt: null, off: true },
   ],
 };
 
@@ -59,9 +64,9 @@ function notFound(): ApiError {
   return new ApiError({ code: 'NOT_FOUND', message: 'No schedule for that month.', status: 404 });
 }
 
-function renderPage(): RenderResult {
+function renderPage(initialEntries: string[] = ['/?month=2026-08']): RenderResult {
   return renderWithProviders(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <ProfitPage />
     </MemoryRouter>,
   );
@@ -86,27 +91,11 @@ describe('ProfitPage', () => {
     useSessionStore.getState().clear();
   });
 
+  // --- Loading / error / empty ------------------------------------------------
+
   it('shows a loading state while the schedule loads', () => {
     renderPage();
     expect(screen.getByText('Loading schedule…')).toBeInTheDocument();
-  });
-
-  it('renders the schedule overview and daily table', async () => {
-    // Scope to schedule-only so the history card (which also lists the day) is hidden.
-    useSessionStore.setState({ permissions: ['profit.schedule'] });
-    renderPage();
-    expect(await screen.findByText('DRAFT')).toBeInTheDocument();
-    expect(screen.getByText('30%')).toBeInTheDocument(); // member monthly
-    expect(screen.getByText('15%')).toBeInTheDocument(); // partner monthly
-    expect(screen.getByText('2026-08-01')).toBeInTheDocument(); // a day row
-    expect(screen.getByText('23:30')).toBeInTheDocument(); // its distribute time
-  });
-
-  it('shows a no-schedule empty state on 404', async () => {
-    vi.mocked(profitApi.getSchedule).mockRejectedValue(notFound());
-    renderPage();
-    expect(await screen.findByText(/No schedule for/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Plan schedule' })).toBeInTheDocument();
   });
 
   it('surfaces a non-404 load error', async () => {
@@ -117,10 +106,143 @@ describe('ProfitPage', () => {
     expect(await screen.findByText('Could not load schedule')).toBeInTheDocument();
   });
 
+  it('shows a no-schedule empty state on 404', async () => {
+    vi.mocked(profitApi.getSchedule).mockRejectedValue(notFound());
+    renderPage();
+    expect(await screen.findByText(/No schedule for/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Plan schedule' })).toBeInTheDocument();
+  });
+
+  // --- Month navigation -------------------------------------------------------
+
+  it('loads the current month by default (no month param)', async () => {
+    renderPage(['/']);
+    await screen.findByText('DRAFT');
+    expect(profitApi.getSchedule).toHaveBeenCalledWith(currentMonth());
+  });
+
+  it('requests the schedule for the month in the URL param', async () => {
+    renderPage(['/?month=2026-08']);
+    await screen.findByText('DRAFT');
+    expect(profitApi.getSchedule).toHaveBeenCalledWith('2026-08');
+  });
+
+  it('navigates to the previous month', async () => {
+    renderPage(['/?month=2026-08']);
+    await screen.findByText('DRAFT');
+    fireEvent.click(screen.getByRole('button', { name: 'Previous month' }));
+    await waitFor(() => expect(profitApi.getSchedule).toHaveBeenCalledWith('2026-07'));
+  });
+
+  it('navigates to the next month', async () => {
+    renderPage(['/?month=2026-08']);
+    await screen.findByText('DRAFT');
+    fireEvent.click(screen.getByRole('button', { name: 'Next month' }));
+    await waitFor(() => expect(profitApi.getSchedule).toHaveBeenCalledWith('2026-09'));
+  });
+
+  it('jumps back to the current month', async () => {
+    renderPage(['/?month=2025-01']);
+    await screen.findByText('DRAFT');
+    fireEvent.click(screen.getByRole('button', { name: 'This month' }));
+    await waitFor(() => expect(profitApi.getSchedule).toHaveBeenCalledWith(currentMonth()));
+  });
+
+  it('requests the correct month when the picker changes', async () => {
+    renderPage(['/?month=2026-08']);
+    await screen.findByText('DRAFT');
+    fireEvent.change(screen.getByLabelText('Schedule month'), { target: { value: '2026-07' } });
+    await waitFor(() => expect(profitApi.getSchedule).toHaveBeenCalledWith('2026-07'));
+  });
+
+  // --- Calendar rendering -----------------------------------------------------
+
+  it('renders the overview and a draft calendar with rates, times and off days', async () => {
+    useSessionStore.setState({ permissions: ['profit.schedule'] });
+    renderPage();
+    expect(await screen.findByText('DRAFT')).toBeInTheDocument(); // overview status badge
+    expect(screen.getByText('30%')).toBeInTheDocument(); // member monthly
+    expect(screen.getByText('15%')).toBeInTheDocument(); // partner monthly
+    // Calendar grid: weekday headers + per-day content from backend values.
+    expect(screen.getByText('Sun')).toBeInTheDocument();
+    expect(screen.getByText('Calendar — August 2026')).toBeInTheDocument();
+    expect(screen.getAllByText('M 1%').length).toBeGreaterThan(0); // day 1 member rate
+    expect(screen.getByText('23:30')).toBeInTheDocument(); // day 1 distribute time
+    expect(screen.getByText('Off')).toBeInTheDocument(); // day 2 is off
+  });
+
+  it('defaults to the calendar grid (not the table) with a header month label', async () => {
+    renderPage(['/?month=2026-08']);
+    // Wait for the schedule to load into the default (calendar) view.
+    expect(await screen.findByText('Calendar — August 2026')).toBeInTheDocument();
+    // The month label is visible in the header between the prev/next controls.
+    expect(screen.getByTestId('current-month-label')).toHaveTextContent('August 2026');
+    // Default view is the 7-column calendar: weekday headers render immediately…
+    expect(screen.getByText('Sun')).toBeInTheDocument();
+    expect(screen.getByText('Sat')).toBeInTheDocument();
+    expect(screen.getByText('Calendar — August 2026')).toBeInTheDocument();
+    // …and the table view (its "Daily schedule" heading) is NOT mounted yet.
+    expect(screen.queryByText('Daily schedule')).not.toBeInTheDocument();
+    // Switching to the table view mounts it on demand.
+    fireEvent.click(screen.getByRole('button', { name: 'Table view' }));
+    expect(screen.getByText('Daily schedule')).toBeInTheDocument();
+  });
+
+  it('renders a published calendar with distribute controls', async () => {
+    vi.mocked(profitApi.getSchedule).mockResolvedValue(PUBLISHED);
+    renderPage();
+    await screen.findByText('PUBLISHED'); // overview
+    // Published day cells expose a Distribute action (day 2 is off → excluded).
+    expect(screen.getAllByRole('button', { name: 'Distribute' })).toHaveLength(1);
+    // History marks day 1 as already distributed.
+    expect(await screen.findByText('Distributed')).toBeInTheDocument();
+  });
+
+  // --- Day editing ------------------------------------------------------------
+
+  it('opens the day editor from a draft calendar cell and saves', async () => {
+    renderPage();
+    await screen.findByText('DRAFT');
+    fireEvent.click(screen.getByRole('button', { name: 'Edit 2026-08-01' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Edit 2026-08-01')).toBeInTheDocument();
+    fireEvent.change(within(dialog).getByLabelText('Member rate (%)'), { target: { value: '2' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save day' }));
+
+    await waitFor(() => expect(profitApi.setScheduleDay).toHaveBeenCalledTimes(1));
+    expect(profitApi.setScheduleDay).toHaveBeenCalledWith({
+      day: '2026-08-01',
+      memberBps: 200,
+      partnerBps: 50,
+      off: false,
+    });
+  });
+
+  // --- View toggle ------------------------------------------------------------
+
+  it('toggles between calendar and table views', async () => {
+    useSessionStore.setState({ permissions: ['profit.schedule'] });
+    renderPage();
+    await screen.findByText('DRAFT');
+    // Calendar is primary: weekday header present, no full-date table rows yet.
+    expect(screen.getByText('Sun')).toBeInTheDocument();
+    expect(screen.queryByText('2026-08-01')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Table view' }));
+    expect(screen.getByText('Daily schedule')).toBeInTheDocument();
+    expect(screen.getByText('2026-08-01')).toBeInTheDocument(); // full date in the table
+
+    fireEvent.click(screen.getByRole('button', { name: 'Calendar view' }));
+    expect(screen.getByText('Sun')).toBeInTheDocument();
+    expect(screen.queryByText('2026-08-01')).not.toBeInTheDocument();
+  });
+
+  // --- Planning ---------------------------------------------------------------
+
   it('plans a schedule through the backend', async () => {
     renderPage();
     await screen.findByText('DRAFT');
-    fireEvent.change(screen.getByLabelText('Schedule month'), { target: { value: '2026-08' } });
     fireEvent.click(screen.getByRole('button', { name: 'Re-plan' }));
 
     const dialog = screen.getByRole('dialog');
@@ -154,10 +276,11 @@ describe('ProfitPage', () => {
     expect(profitApi.planSchedule).not.toHaveBeenCalled();
   });
 
+  // --- Publishing -------------------------------------------------------------
+
   it('publishes after confirmation', async () => {
     renderPage();
     await screen.findByText('DRAFT');
-    fireEvent.change(screen.getByLabelText('Schedule month'), { target: { value: '2026-08' } });
     fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
 
     expect(await screen.findByText('Publish the 2026-08 schedule?')).toBeInTheDocument();
@@ -184,6 +307,8 @@ describe('ProfitPage', () => {
       ),
     );
   });
+
+  // --- Distribution + permission gating --------------------------------------
 
   it('hides distribution + history without profit.distribute', async () => {
     vi.mocked(profitApi.getSchedule).mockResolvedValue(PUBLISHED);
@@ -245,10 +370,8 @@ describe('ProfitPage', () => {
 
   it('renders distribution history for the month', async () => {
     vi.mocked(profitApi.getSchedule).mockResolvedValue(PUBLISHED);
-    renderPage();
+    renderPage(['/?month=2026-08']);
     await screen.findByText('PUBLISHED');
-    // Pin the month so the history range is deterministic regardless of wall-clock.
-    fireEvent.change(screen.getByLabelText('Schedule month'), { target: { value: '2026-08' } });
     expect(await screen.findByText('TXN-P-2026-08-01')).toBeInTheDocument();
     expect(profitApi.listHistory).toHaveBeenCalledWith({ from: '2026-08-01', to: '2026-08-31' });
   });
