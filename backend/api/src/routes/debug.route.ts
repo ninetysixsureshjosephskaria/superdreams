@@ -2,14 +2,19 @@ import type { FastifyInstance, HTTPMethods } from 'fastify';
 import { statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
+import { config } from '@/config';
 import { sendSuccess } from '@/utils';
 
 /**
- * TEMPORARY runtime diagnostics endpoint (`GET /api/v1/debug/runtime`).
+ * Runtime diagnostics endpoint (`GET /api/v1/debug/runtime`).
  *
  * Reports the deployed commit, build timestamp, and the registered
  * `/api/v1/members` routes so a stale/mismatched deployment can be diagnosed at
- * a glance. Read-only; no business logic. Remove once deployment is verified.
+ * a glance. Read-only; no business logic.
+ *
+ * Production-gated: it is registered only outside production, so it is never
+ * publicly reachable on the live deployment (it returns 404 there) while
+ * remaining available for local/staging diagnosis.
  */
 
 /** Captured once at module load — the process (deploy) start time. */
@@ -47,8 +52,11 @@ const MEMBER_ROUTE_CANDIDATES: { method: HTTPMethods; url: string }[] = [
   { method: 'POST', url: '/api/v1/members/:id/documents' },
 ];
 
-/** Registers the temporary runtime diagnostics route. */
+/** Registers the runtime diagnostics route — skipped entirely in production. */
 export function registerDebugRoutes(app: FastifyInstance): void {
+  if (config.app.isProduction) {
+    return;
+  }
   app.get(
     '/api/v1/debug/runtime',
     { schema: { tags: ['Meta'], summary: 'Runtime diagnostics (temporary)' } },

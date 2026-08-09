@@ -58,13 +58,6 @@ COPY --from=builder --chown=node:node /prod/node_modules ./node_modules
 COPY --from=builder --chown=node:node /prod/dist ./dist
 COPY --from=builder --chown=node:node /prod/drizzle ./drizzle
 
-# TEMPORARY DIAGNOSTIC (Phase 2 login outage): the startup wrapper reports the
-# exact exit status/signal of migrate/seed/server so the failing stage is fully
-# observable in Railway logs. Copied from the build context (not the pruned
-# /prod bundle). Revert CMD to the plain chain below once diagnosed:
-#   CMD ["sh", "-c", "node dist/migrate.js && node dist/seed.js && exec node dist/server.js"]
-COPY --chown=node:node backend/api/scripts/start.sh ./scripts/start.sh
-
 # Drop privileges.
 USER node
 
@@ -72,6 +65,9 @@ USER node
 # defaults to 0.0.0.0. Documented for clarity.
 EXPOSE 3000
 
-# Run the diagnostic startup wrapper (see backend/api/scripts/start.sh). It runs
-# migrate -> seed -> server sequentially and prints each stage's exit/signal.
-CMD ["sh", "scripts/start.sh"]
+# Production startup: migrate, then seed, then run the server. The `&&` chain is
+# fail-fast — a failed migration or seed aborts before the server can start
+# against an inconsistent database. `exec` replaces the shell with the Node
+# process so it becomes PID 1 and receives SIGTERM/SIGINT directly for graceful
+# shutdown (which stops the scheduler via the onClose hook).
+CMD ["sh", "-c", "node dist/migrate.js && node dist/seed.js && exec node dist/server.js"]
