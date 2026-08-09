@@ -1,0 +1,1 @@
+ALTER TABLE "deposit_tranches" ADD COLUMN "fee_cents" bigint DEFAULT 0 NOT NULL;

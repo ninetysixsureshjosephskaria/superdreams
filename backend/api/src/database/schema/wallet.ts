@@ -13,6 +13,7 @@ import {
 import { baseColumns } from './columns';
 import {
   walletHoldStatus,
+  walletKind,
   walletStatus,
   walletTransactionDirection,
   walletTransactionStatus,
@@ -41,6 +42,8 @@ export const wallets = pgTable(
     memberId: uuid('member_id')
       .notNull()
       .references(() => members.id),
+    /** Economy discriminator — a member may hold one LOYALTY and one FINANCIAL wallet. */
+    kind: walletKind('kind').notNull().default('LOYALTY'),
     currencyCode: text('currency_code').notNull(),
     status: walletStatus('status').notNull().default('PENDING'),
     openedAt: timestamp('opened_at', { withTimezone: true }).notNull().defaultNow(),
@@ -48,7 +51,9 @@ export const wallets = pgTable(
   },
   (table) => [
     uniqueIndex('wallets_wallet_number_uq').on(table.walletNumber),
-    uniqueIndex('wallets_member_id_uq').on(table.memberId),
+    // One wallet per member PER KIND (was: one per member). Existing rows are
+    // LOYALTY, so this preserves the prior invariant for the loyalty economy.
+    uniqueIndex('wallets_member_id_kind_uq').on(table.memberId, table.kind),
     index('wallets_status_idx').on(table.status),
   ],
 );

@@ -50,6 +50,7 @@ export { createWalletApi } from './wallet';
 export type {
   WalletApi,
   WalletStatus,
+  WalletKind,
   TransactionType,
   TransactionDirection,
   TransactionStatus,
@@ -75,6 +76,73 @@ export type {
   HoldInput,
   GenerateStatementInput,
 } from './wallet';
+export { createFinanceApi } from './finance';
+export type {
+  FinanceApi,
+  FinancialRequestType,
+  FinancialRequestStatus,
+  FinancialRequestData,
+  FinancialLimitsData,
+  DepositTrancheStatus,
+  DepositTrancheData,
+  PaginatedFinancialRequests,
+  ListFinancialRequestsParams,
+  FinanceDecisionInput,
+  FinanceRejectInput,
+  UpdateFinancialLimitsInput,
+  CreateDepositInput,
+  CreateWithdrawalInput,
+} from './finance';
+export { createCommissionApi } from './commission';
+export type {
+  CommissionApi,
+  CommissionTierData,
+  CommissionTargetData,
+  CommissionConfigView,
+  CommissionTierInput,
+  UpdateReferralRateInput,
+  SetDefaultTiersInput,
+  CreateCommissionTargetInput,
+} from './commission';
+export { createProfitApi } from './profit';
+export type {
+  ProfitApi,
+  ProfitScheduleStatus,
+  ProfitScheduleDayData,
+  ProfitScheduleData,
+  ProfitDistributionData,
+  PlanScheduleInput,
+  SetScheduleDayInput,
+  PublishScheduleInput,
+  DistributeProfitInput,
+  ProfitHistoryParams,
+} from './profit';
+export { createBonusApi } from './bonus';
+export type {
+  BonusApi,
+  BonusScope,
+  BonusFrequency,
+  BonusStatus,
+  BonusCampaignData,
+  CreateBonusCampaignInput,
+  UpdateBonusCampaignInput,
+} from './bonus';
+export { createActivationBonusApi } from './activation-bonus';
+export type {
+  ActivationBonusApi,
+  ActivationRewardType,
+  ActivationConfigData,
+  UpdateActivationConfigInput,
+  ActivationSweepResult,
+} from './activation-bonus';
+export { createCurrenciesApi } from './currencies';
+export type {
+  CurrenciesApi,
+  CurrencyData,
+  CreateCurrencyInput,
+  UpdateCurrencyInput,
+  ListCurrenciesParams,
+} from './currencies';
 export { createRewardsApi } from './rewards';
 export type {
   RewardsApi,
@@ -268,3 +336,18 @@ export type {
   PaginatedGameHistory,
   GameHistoryParams,
 } from './games';
+export { createNetworkApi } from './network';
+export type {
+  NetworkApi,
+  InviteRole,
+  InviteStatus,
+  Invite,
+  InvitePreview,
+  PaginatedInvites,
+  NetworkMemberNode,
+  ReferralSummary,
+  PartnerNetworkSummary,
+  NetworkMemberDetail,
+  CreateInviteInput,
+  ListInvitesParams,
+} from './network';

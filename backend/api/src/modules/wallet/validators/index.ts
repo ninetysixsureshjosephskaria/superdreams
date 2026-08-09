@@ -47,6 +47,8 @@ const limitsSchema = z.object({
 
 export const createWalletSchema = z.object({
   memberId: z.string().uuid(),
+  /** Economy discriminator (Phase 2). Defaults to LOYALTY for backward compatibility. */
+  kind: z.enum(['LOYALTY', 'FINANCIAL']).optional(),
   currencyCode: currencyCodeSchema.optional(),
   status: walletStatusSchema.optional(),
   limits: limitsSchema.optional(),
@@ -118,4 +120,13 @@ export const holdParamsSchema = z.object({
 export const transactionParamsSchema = z.object({
   id: z.string().uuid(),
   transactionId: z.string().uuid(),
+});
+
+/**
+ * Query for the portal self-service `/wallets/me*` routes. `kind` selects which
+ * wallet to resolve for the caller; defaults to LOYALTY for backward
+ * compatibility (FINANCIAL surfaces the units wallet).
+ */
+export const meWalletQuerySchema = z.object({
+  kind: z.enum(['LOYALTY', 'FINANCIAL']).optional(),
 });

@@ -18,6 +18,8 @@ export const ROUTES = {
   games: '/games',
   dreamStore: '/dream-store',
   wallet: '/wallet',
+  network: '/network',
+  earnings: '/earnings',
   profile: '/profile',
   unauthorized: '/401',
   forbidden: '/403',

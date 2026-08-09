@@ -5,6 +5,7 @@ import type { DatabaseHealth } from '@/database/connection';
 import type { RequestContext } from '@/middleware';
 import type { AuthContext } from '@/modules/auth/middleware';
 import type { ResolvedAuthorization } from '@/modules/rbac/dto';
+import type { SchedulerRuntime } from '@/scheduler';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -18,6 +19,9 @@ declare module 'fastify' {
     redis: Redis;
     /** Probes Redis connectivity; rejects if unreachable. */
     redisPing: () => Promise<void>;
+    /** Background job scheduler runtime. Created at wiring time; started only by
+     *  the server process (never in `buildApp`). Stopped on app close. */
+    scheduler: SchedulerRuntime;
   }
 
   interface FastifyRequest {

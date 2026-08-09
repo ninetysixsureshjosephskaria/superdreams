@@ -82,6 +82,35 @@ export const PERMISSIONS = {
   // Games.
   GAME_READ: 'game.read',
   GAME_MANAGE: 'game.manage',
+
+  // Finance — deposits / withdrawals (Phase 2B).
+  FINANCE_READ: 'finance.read',
+  FINANCE_DEPOSIT_APPROVE: 'deposits.approve',
+  FINANCE_WITHDRAW_APPROVE: 'withdrawals.approve',
+
+  // Finance — policy & reference data (Phase 2C).
+  FINANCE_LIMITS_MANAGE: 'finance.limits.manage',
+  CURRENCY_MANAGE: 'currency.manage',
+
+  // Finance — deposit tranche lifecycle (Phase 2E).
+  FINANCE_TRANCHE_MANAGE: 'finance.tranche.manage',
+
+  // Network / referrals / invites (Phase 2D).
+  NETWORK_READ: 'network.read',
+  INVITE_SEND: 'invite.send',
+
+  // Earnings — commission rules (Phase 2E).
+  COMMISSION_MANAGE: 'commission.manage',
+
+  // Earnings — daily profit (Phase 2E).
+  PROFIT_SCHEDULE: 'profit.schedule',
+  PROFIT_DISTRIBUTE: 'profit.distribute',
+
+  // Earnings — bonus campaigns (Phase 2E).
+  BONUS_MANAGE: 'bonus.manage',
+
+  // Earnings — activation bonus (Phase 2E).
+  ACTIVATION_BONUS_MANAGE: 'activation.bonus.manage',
 } as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -425,6 +454,85 @@ export const PERMISSION_DEFINITIONS: readonly PermissionDefinition[] = [
     action: 'manage',
     description: 'Create and update games.',
   },
+  {
+    key: PERMISSIONS.FINANCE_READ,
+    resource: 'finance',
+    action: 'read',
+    description: 'View deposit / withdrawal requests, the action queue and deposit tranches.',
+  },
+  {
+    key: PERMISSIONS.FINANCE_DEPOSIT_APPROVE,
+    resource: 'deposits',
+    action: 'approve',
+    description: 'Approve, hold or reject member deposit requests.',
+  },
+  {
+    key: PERMISSIONS.FINANCE_WITHDRAW_APPROVE,
+    resource: 'withdrawals',
+    action: 'approve',
+    description: 'Approve, hold or reject member withdrawal requests.',
+  },
+  {
+    key: PERMISSIONS.FINANCE_LIMITS_MANAGE,
+    resource: 'finance',
+    action: 'limits.manage',
+    description:
+      'Update system-wide deposit / withdrawal limits, early-withdraw policy and processing SLA.',
+  },
+  {
+    key: PERMISSIONS.CURRENCY_MANAGE,
+    resource: 'currency',
+    action: 'manage',
+    description: 'Create, update and remove currencies and their per-unit values.',
+  },
+  {
+    key: PERMISSIONS.FINANCE_TRANCHE_MANAGE,
+    resource: 'finance',
+    action: 'tranche.manage',
+    description: 'Run deposit-tranche maturity and liquidate (early-unlock) member tranches.',
+  },
+  {
+    key: PERMISSIONS.NETWORK_READ,
+    resource: 'network',
+    action: 'read',
+    description: 'View the network-wide downline tree, partners and referral relationships.',
+  },
+  {
+    key: PERMISSIONS.INVITE_SEND,
+    resource: 'invite',
+    action: 'send',
+    description: 'Issue, list, revoke and delete network join invites.',
+  },
+  {
+    key: PERMISSIONS.COMMISSION_MANAGE,
+    resource: 'commission',
+    action: 'manage',
+    description: 'Configure commission tiers, targets and the member-referral rate.',
+  },
+  {
+    key: PERMISSIONS.PROFIT_SCHEDULE,
+    resource: 'profit',
+    action: 'schedule',
+    description: 'Plan, auto-fill, tune and publish the monthly daily-profit schedule.',
+  },
+  {
+    key: PERMISSIONS.PROFIT_DISTRIBUTE,
+    resource: 'profit',
+    action: 'distribute',
+    description: 'Run daily-profit distribution and view distribution history.',
+  },
+  {
+    key: PERMISSIONS.BONUS_MANAGE,
+    resource: 'bonus',
+    action: 'manage',
+    description: 'Create, update and manage deposit bonus campaigns.',
+  },
+  {
+    key: PERMISSIONS.ACTIVATION_BONUS_MANAGE,
+    resource: 'activation',
+    action: 'bonus.manage',
+    description: 'Configure and run the network-wide activation bonus.',
+  },
 ];
 
 export const ROLES = {
@@ -461,6 +569,23 @@ export const SYSTEM_ROLE_DEFINITIONS: readonly SystemRoleDefinition[] = [
       PERMISSIONS.MEMBER_STATUS,
       PERMISSIONS.ACCOUNT_READ,
       PERMISSIONS.ACCOUNT_STATUS,
+      // Finance action queue (Phase 2B).
+      PERMISSIONS.FINANCE_READ,
+      PERMISSIONS.FINANCE_DEPOSIT_APPROVE,
+      PERMISSIONS.FINANCE_WITHDRAW_APPROVE,
+      // Finance policy & reference data (Phase 2C).
+      PERMISSIONS.FINANCE_LIMITS_MANAGE,
+      PERMISSIONS.CURRENCY_MANAGE,
+      // Network / referrals / invites (Phase 2D).
+      PERMISSIONS.NETWORK_READ,
+      PERMISSIONS.INVITE_SEND,
+      // Finance tranche lifecycle + earnings (Phase 2E).
+      PERMISSIONS.FINANCE_TRANCHE_MANAGE,
+      PERMISSIONS.COMMISSION_MANAGE,
+      PERMISSIONS.PROFIT_SCHEDULE,
+      PERMISSIONS.PROFIT_DISTRIBUTE,
+      PERMISSIONS.BONUS_MANAGE,
+      PERMISSIONS.ACTIVATION_BONUS_MANAGE,
     ],
   },
   {

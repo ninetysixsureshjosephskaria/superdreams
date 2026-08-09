@@ -33,6 +33,14 @@ async function start(): Promise<void> {
     const address = await app.listen({ host: config.app.host, port: config.app.port });
     process.stdout.write('server listening\n');
     app.log.info(`Super Dreams API listening at ${address}`);
+
+    // Start background jobs only once the server is up and dependencies are
+    // ready. This is the single place schedulers start (never in `buildApp`),
+    // so exactly one runtime instance ticks per process; `app.close()` (SIGINT/
+    // SIGTERM) stops it via the onClose hook.
+    if (config.scheduler.enabled) {
+      app.scheduler.start();
+    }
   } catch (error) {
     app.log.error({ err: error }, 'Failed to start server');
     process.exit(1);

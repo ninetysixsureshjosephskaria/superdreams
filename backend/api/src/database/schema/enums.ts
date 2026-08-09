@@ -24,6 +24,65 @@ export const auditAction = pgEnum('audit_action', ['CREATE', 'UPDATE', 'DELETE',
 /** Wallet lifecycle status. */
 export const walletStatus = pgEnum('wallet_status', ['PENDING', 'ACTIVE', 'SUSPENDED', 'CLOSED']);
 
+/**
+ * Wallet economy discriminator (Phase 2). LOYALTY = the original points wallet
+ * (rewards / dream-store / games / campaigns). FINANCIAL = the real-money units
+ * wallet (deposits / withdrawals / tranches / profit / commission). A member may
+ * hold at most one wallet of each kind. Existing wallets default to LOYALTY.
+ */
+export const walletKind = pgEnum('wallet_kind', ['LOYALTY', 'FINANCIAL']);
+export type WalletKind = (typeof walletKind.enumValues)[number];
+
+/** Financial request kind (Phase 2B): member-initiated deposit or withdrawal. */
+export const financialRequestType = pgEnum('financial_request_type', ['DEPOSIT', 'WITHDRAW']);
+
+/**
+ * Financial request lifecycle. PENDING/HOLD are actionable; APPROVED/REJECTED
+ * are terminal ("locked once submitted" per the reference).
+ */
+export const financialRequestStatus = pgEnum('financial_request_status', [
+  'PENDING',
+  'HOLD',
+  'APPROVED',
+  'REJECTED',
+]);
+
+/** Deposit tranche lifecycle (Phase 2B): locked capital with a maturity date. */
+export const depositTrancheStatus = pgEnum('deposit_tranche_status', [
+  'LOCKED',
+  'MATURED',
+  'UNLOCKED',
+  'LIQUIDATED',
+]);
+
+/** Kind of partner earning credited on a member deposit (Phase 2E). */
+export const commissionEarningType = pgEnum('commission_earning_type', ['COMMISSION', 'REFERRAL']);
+
+/** Monthly daily-profit schedule lifecycle (Phase 2E). */
+export const profitScheduleStatus = pgEnum('profit_schedule_status', ['DRAFT', 'PUBLISHED']);
+
+/** Which rate a wallet receives in a daily-profit distribution (Phase 2E). */
+export const profitBeneficiaryRole = pgEnum('profit_beneficiary_role', ['MEMBER', 'PARTNER']);
+
+/** Which deposits a bonus campaign applies to (Phase 2E). */
+export const bonusCampaignScope = pgEnum('bonus_campaign_scope', ['FIRST_DEPOSIT', 'ALL_DEPOSITS']);
+
+/** How often a member may claim a bonus campaign (Phase 2E). */
+export const bonusClaimFrequency = pgEnum('bonus_claim_frequency', ['SINGLE', 'MULTI']);
+
+/** Activation-bonus reward kind (Phase 2E): percentage of balance or a fixed amount. */
+export const activationRewardType = pgEnum('activation_reward_type', ['PERCENT', 'FIXED']);
+
+/** The role a network invite provisions on acceptance (Phase 2D). */
+export const inviteRole = pgEnum('invite_role', ['PARTNER', 'MEMBER']);
+
+/**
+ * Invite lifecycle (Phase 2D). PENDING is the only actionable state; USED /
+ * EXPIRED / REVOKED are terminal. Matches the reference `invite.html` statuses
+ * (Pending / Used / Expired + revoke).
+ */
+export const inviteStatus = pgEnum('invite_status', ['PENDING', 'USED', 'EXPIRED', 'REVOKED']);
+
 /** Kind of a ledger transaction. */
 export const walletTransactionType = pgEnum('wallet_transaction_type', [
   'CREDIT',

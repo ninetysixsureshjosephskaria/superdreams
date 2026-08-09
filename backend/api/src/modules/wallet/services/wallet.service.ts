@@ -23,6 +23,7 @@ import type {
   WalletBalanceData,
   WalletDetail,
   WalletHoldData,
+  WalletKind,
   WalletStatementData,
   WalletStatus,
   WalletSummary,
@@ -165,13 +166,19 @@ export class WalletService {
     return (await this.statements.listByWallet(id)).map(toWalletStatement);
   }
 
-  /** Resolves the wallet owned by the given identity user (portal self-service). */
-  public async getByUserId(userId: string): Promise<WalletDetail | null> {
+  /**
+   * Resolves the wallet owned by the given identity user (portal self-service).
+   * Defaults to the LOYALTY wallet; pass `kind='FINANCIAL'` for the units wallet.
+   */
+  public async getByUserId(
+    userId: string,
+    kind: WalletKind = 'LOYALTY',
+  ): Promise<WalletDetail | null> {
     const member = await this.memberLookup.findByUserId(userId);
     if (!member) {
       return null;
     }
-    const wallet = await this.wallets.findByMemberId(member.id);
+    const wallet = await this.wallets.findByMemberId(member.id, kind);
     return wallet ? this.assembleDetail(wallet) : null;
   }
 
@@ -184,8 +191,9 @@ export class WalletService {
     if (!member) {
       throw new NotFoundError('Member not found.');
     }
-    if (await this.wallets.findByMemberId(data.memberId)) {
-      throw new ConflictError('This member already has a wallet.');
+    const kind = data.kind ?? 'LOYALTY';
+    if (await this.wallets.findByMemberId(data.memberId, kind)) {
+      throw new ConflictError(`This member already has a ${kind.toLowerCase()} wallet.`);
     }
 
     const currencyCode = data.currencyCode ?? DEFAULT_CURRENCY;
@@ -197,6 +205,7 @@ export class WalletService {
         {
           walletNumber,
           memberId: data.memberId,
+          kind,
           currencyCode,
           status,
           ...(status === 'CLOSED' ? { closedAt: new Date() } : {}),
@@ -384,6 +393,52 @@ export class WalletService {
       at: new Date(),
     });
     return this.requireTransaction(result.transactionId);
+  }
+
+  /**
+   * Transaction-aware credit — applies a CREDIT to the wallet inside a caller-
+   * provided transaction so higher-level financial operations (e.g. approving a
+   * deposit AND creating its tranche) commit atomically (rule 14). Mirrors the
+   * rewards `*Within(tx, …)` composition seam. Does not publish an event; the
+   * composing service publishes its own domain event.
+   */
+  public async creditWithin(
+    tx: Executor,
+    walletId: string,
+    input: { amountMinor: number; reference?: string; description?: string | null },
+    actor: WalletActor,
+  ): Promise<{ transactionId: string }> {
+    const wallet = await this.requireActiveWallet(walletId, tx);
+    const result = await this.applyTransaction(tx, {
+      wallet,
+      type: 'CREDIT',
+      direction: 'CREDIT',
+      amountMinor: input.amountMinor,
+      reference: input.reference ?? reference('TXN'),
+      description: input.description ?? null,
+      actor,
+    });
+    return { transactionId: result.transactionId };
+  }
+
+  /** Transaction-aware debit — see {@link creditWithin}. */
+  public async debitWithin(
+    tx: Executor,
+    walletId: string,
+    input: { amountMinor: number; reference?: string; description?: string | null },
+    actor: WalletActor,
+  ): Promise<{ transactionId: string }> {
+    const wallet = await this.requireActiveWallet(walletId, tx);
+    const result = await this.applyTransaction(tx, {
+      wallet,
+      type: 'DEBIT',
+      direction: 'DEBIT',
+      amountMinor: input.amountMinor,
+      reference: input.reference ?? reference('TXN'),
+      description: input.description ?? null,
+      actor,
+    });
+    return { transactionId: result.transactionId };
   }
 
   public async adjust(
@@ -831,16 +886,16 @@ export class WalletService {
     return toWalletDetail(wallet, balance, limits);
   }
 
-  private async requireWallet(id: string): Promise<WalletRow> {
-    const wallet = await this.wallets.findById(id);
+  private async requireWallet(id: string, executor: Executor = this.db): Promise<WalletRow> {
+    const wallet = await this.wallets.findById(id, executor);
     if (!wallet) {
       throw new NotFoundError('Wallet not found.');
     }
     return wallet;
   }
 
-  private async requireActiveWallet(id: string): Promise<WalletRow> {
-    const wallet = await this.requireWallet(id);
+  private async requireActiveWallet(id: string, executor: Executor = this.db): Promise<WalletRow> {
+    const wallet = await this.requireWallet(id, executor);
     if (wallet.status !== 'ACTIVE') {
       throw new BusinessRuleError(`Wallet must be ACTIVE (currently ${wallet.status}).`);
     }

@@ -2,6 +2,8 @@ import { config } from '@/config';
 import { createDatabaseConnection } from '@/database/connection';
 // Side-effect import: register the RBAC catalog seed (no native dependencies).
 import '@/modules/rbac/seed';
+// Side-effect import: register the currencies reference seed (no native deps).
+import './currencies';
 
 import { runSeeds } from './index';
 

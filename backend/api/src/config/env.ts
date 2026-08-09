@@ -63,6 +63,13 @@ const EnvSchema = z
     // Optional: when unset, the effective default is environment-dependent
     // (enabled outside production, disabled in production). See config.ts.
     SWAGGER_ENABLED: booleanFromString.optional(),
+
+    // Background scheduler runtime (daily profit, tranche maturity, activation
+    // sweep). Optional: when unset it is enabled outside the test environment.
+    // The tick interval defaults to hourly; every job is idempotent, so a short
+    // interval only re-checks, it never double-credits.
+    SCHEDULER_ENABLED: booleanFromString.optional(),
+    SCHEDULER_INTERVAL_MS: z.coerce.number().int().min(1000).default(3_600_000),
   })
   .superRefine((environment, ctx) => {
     if (

@@ -76,6 +76,13 @@ export const config = {
     // explicit SWAGGER_ENABLED value always takes precedence.
     enabled: env.SWAGGER_ENABLED ?? env.NODE_ENV !== 'production',
   },
+  scheduler: {
+    // Background jobs (daily profit, tranche maturity, activation sweep). Enabled
+    // by default outside test; an explicit SCHEDULER_ENABLED value wins. Started
+    // only by the server process (never in `buildApp`), so tests stay timer-free.
+    enabled: env.SCHEDULER_ENABLED ?? env.NODE_ENV !== 'test',
+    intervalMs: env.SCHEDULER_INTERVAL_MS,
+  },
 } as const;
 
 export type Config = typeof config;

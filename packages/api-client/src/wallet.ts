@@ -7,6 +7,8 @@ import type { AxiosInstance } from 'axios';
  */
 
 export type WalletStatus = 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'CLOSED';
+/** LOYALTY = points wallet; FINANCIAL = units wallet (1 unit = $30 = 3000 cents). */
+export type WalletKind = 'LOYALTY' | 'FINANCIAL';
 export type TransactionType = 'CREDIT' | 'DEBIT' | 'ADJUSTMENT' | 'HOLD' | 'RELEASE' | 'REVERSAL';
 export type TransactionDirection = 'CREDIT' | 'DEBIT';
 export type TransactionStatus = 'POSTED' | 'REVERSED';
@@ -23,6 +25,7 @@ export interface WalletSummary {
   id: string;
   walletNumber: string;
   memberId: string;
+  kind: WalletKind;
   currencyCode: string;
   status: WalletStatus;
   balance: WalletBalanceData;
@@ -216,11 +219,14 @@ export interface WalletApi {
   releaseHold(id: string, holdId: string): Promise<WalletHoldData>;
   reverse(id: string, transactionId: string): Promise<WalletTransactionData>;
   generateStatement(id: string, input?: GenerateStatementInput): Promise<WalletStatementData>;
-  getMine(): Promise<WalletDetail>;
-  getMyBalance(): Promise<WalletBalanceData>;
-  listMyTransactions(params?: ListTransactionsParams): Promise<PaginatedTransactions>;
-  listMyStatements(): Promise<WalletStatementData[]>;
-  listMyHolds(): Promise<WalletHoldData[]>;
+  getMine(kind?: WalletKind): Promise<WalletDetail>;
+  getMyBalance(kind?: WalletKind): Promise<WalletBalanceData>;
+  listMyTransactions(
+    params?: ListTransactionsParams,
+    kind?: WalletKind,
+  ): Promise<PaginatedTransactions>;
+  listMyStatements(kind?: WalletKind): Promise<WalletStatementData[]>;
+  listMyHolds(kind?: WalletKind): Promise<WalletHoldData[]>;
 }
 
 /** Binds the wallet resource to a configured API client. */
@@ -314,29 +320,36 @@ export function createWalletApi(client: AxiosInstance): WalletApi {
       );
       return response.data.data;
     },
-    async getMine() {
-      const response = await client.get<Envelope<WalletDetail>>(`${base}/me`);
+    async getMine(kind) {
+      const response = await client.get<Envelope<WalletDetail>>(`${base}/me`, { params: { kind } });
       return response.data.data;
     },
-    async getMyBalance() {
-      const response = await client.get<Envelope<WalletBalanceData>>(`${base}/me/balance`);
+    async getMyBalance(kind) {
+      const response = await client.get<Envelope<WalletBalanceData>>(`${base}/me/balance`, {
+        params: { kind },
+      });
       return response.data.data;
     },
-    async listMyTransactions(params) {
+    async listMyTransactions(params, kind) {
       const response = await client.get<Envelope<PaginatedTransactions>>(
         `${base}/me/transactions`,
-        { params },
+        { params: { ...params, kind } },
       );
       return response.data.data;
     },
-    async listMyStatements() {
+    async listMyStatements(kind) {
       const response = await client.get<ItemsEnvelope<WalletStatementData>>(
         `${base}/me/statements`,
+        {
+          params: { kind },
+        },
       );
       return response.data.data.items;
     },
-    async listMyHolds() {
-      const response = await client.get<ItemsEnvelope<WalletHoldData>>(`${base}/me/holds`);
+    async listMyHolds(kind) {
+      const response = await client.get<ItemsEnvelope<WalletHoldData>>(`${base}/me/holds`, {
+        params: { kind },
+      });
       return response.data.data.items;
     },
   };

@@ -6,7 +6,12 @@ import { sendSuccess } from '@/utils';
 
 import type { WalletActor, WalletDetail } from '../dto';
 import type { WalletService } from '../services';
-import { holdParamsSchema, transactionParamsSchema, walletIdParamsSchema } from '../validators';
+import {
+  holdParamsSchema,
+  meWalletQuerySchema,
+  transactionParamsSchema,
+  walletIdParamsSchema,
+} from '../validators';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -183,7 +188,8 @@ export class WalletController {
 
   private async mineOrThrow(request: FastifyRequest): Promise<WalletDetail> {
     const context = requireAuth(request);
-    const wallet = await this.service.getByUserId(context.userId);
+    const { kind } = meWalletQuerySchema.parse(request.query);
+    const wallet = await this.service.getByUserId(context.userId, kind);
     if (!wallet) {
       throw new NotFoundError('No wallet is linked to your account.');
     }

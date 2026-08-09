@@ -15,6 +15,7 @@ import type {
 } from '../validators';
 
 export type WalletStatus = 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'CLOSED';
+export type WalletKind = 'LOYALTY' | 'FINANCIAL';
 export type TransactionType = 'CREDIT' | 'DEBIT' | 'ADJUSTMENT' | 'HOLD' | 'RELEASE' | 'REVERSAL';
 export type TransactionDirection = 'CREDIT' | 'DEBIT';
 export type TransactionStatus = 'POSTED' | 'REVERSED';
@@ -32,6 +33,7 @@ export interface WalletSummary {
   id: string;
   walletNumber: string;
   memberId: string;
+  kind: WalletKind;
   currencyCode: string;
   status: WalletStatus;
   balance: WalletBalanceData;

@@ -3,7 +3,7 @@ import { and, asc, desc, eq, ilike, or, sql, type InferSelectModel, type SQL } f
 import type { Database } from '@/database/client';
 import { notDeleted } from '@/database/helpers';
 import { BaseRepository } from '@/database/repositories';
-import { wallets } from '@/database/schema';
+import { wallets, type WalletKind } from '@/database/schema';
 import type { Executor } from '@/database/types';
 
 import type { ListWalletsQuery } from '../dto';
@@ -32,11 +32,21 @@ export class WalletRepository extends BaseRepository<typeof wallets> {
     return rows[0] ?? null;
   }
 
-  public async findByMemberId(memberId: string): Promise<WalletRow | null> {
+  /**
+   * Finds a member's wallet of the given kind. Defaults to LOYALTY so every
+   * existing caller (rewards / dream-store / games / member-me) keeps resolving
+   * the original points wallet unchanged.
+   */
+  public async findByMemberId(
+    memberId: string,
+    kind: WalletKind = 'LOYALTY',
+  ): Promise<WalletRow | null> {
     const rows = await this.db
       .select()
       .from(wallets)
-      .where(and(eq(wallets.memberId, memberId), notDeleted(wallets.deletedAt)))
+      .where(
+        and(eq(wallets.memberId, memberId), eq(wallets.kind, kind), notDeleted(wallets.deletedAt)),
+      )
       .limit(1);
     return rows[0] ?? null;
   }

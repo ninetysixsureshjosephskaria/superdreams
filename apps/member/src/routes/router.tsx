@@ -16,6 +16,8 @@ function lazyPage(node: ReactNode): ReactNode {
 const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'));
 const ProfilePage = lazy(() => import('@/features/profile/pages/ProfilePage'));
 const WalletPage = lazy(() => import('@/features/wallet/pages/WalletPage'));
+const NetworkPage = lazy(() => import('@/features/network/pages/NetworkPage'));
+const EarningsPage = lazy(() => import('@/features/earnings/pages/EarningsPage'));
 const GamesPage = lazy(() => import('@/features/games/pages/GamesPage'));
 const DreamStorePage = lazy(() => import('@/features/dream-store/pages/DreamStorePage'));
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));
@@ -32,9 +34,9 @@ const NotFoundPage = lazy(() => import('@/pages/not-found/NotFoundPage'));
 /**
  * Application router.
  *
- * Navigation is limited to Home, Games, Dream Store, Wallet and Profile (see
- * `navigation/nav-config.ts`). All five are fully functional and backed by the
- * real API. Other member feature pages remain in the codebase but are
+ * Navigation covers Home, Games, Dream Store, Wallet, Network, Earnings and
+ * Profile (see `navigation/nav-config.ts`). All are fully functional and backed
+ * by the real API. Other member feature pages remain in the codebase but are
  * intentionally not routed here.
  *
  * The member area is wrapped in {@link ProtectedRoute} (a mock guard in this
@@ -54,6 +56,8 @@ export const router = createBrowserRouter([
       { path: ROUTES.games.replace(/^\//, ''), element: <GamesPage /> },
       { path: ROUTES.dreamStore.replace(/^\//, ''), element: <DreamStorePage /> },
       { path: ROUTES.wallet.replace(/^\//, ''), element: <WalletPage /> },
+      { path: ROUTES.network.replace(/^\//, ''), element: <NetworkPage /> },
+      { path: ROUTES.earnings.replace(/^\//, ''), element: <EarningsPage /> },
       { path: ROUTES.profile.replace(/^\//, ''), element: <ProfilePage /> },
     ],
   },

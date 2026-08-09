@@ -40,6 +40,7 @@ export function toWalletSummary(wallet: WalletRow, balance: WalletBalanceRow): W
     id: wallet.id,
     walletNumber: wallet.walletNumber,
     memberId: wallet.memberId,
+    kind: wallet.kind,
     currencyCode: wallet.currencyCode,
     status: wallet.status,
     balance: toWalletBalance(balance),

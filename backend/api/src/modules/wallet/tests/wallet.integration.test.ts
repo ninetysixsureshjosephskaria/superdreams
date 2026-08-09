@@ -69,7 +69,7 @@ describe('wallet module (PGlite)', () => {
 
   it('rejects a second wallet for the same member', async () => {
     await expect(mod.service.create({ memberId: MEMBER_ID }, ACTOR)).rejects.toThrow(
-      /already has a wallet/i,
+      /already has a (loyalty )?wallet/i,
     );
   });
 
@@ -332,7 +332,7 @@ describe('wallet module (PGlite)', () => {
     );
   });
 
-  it('resolves the wallet owned by a linked identity user (ownership path)', async () => {
+  it('resolves the wallet owned by a linked identity user, by kind (ownership path)', async () => {
     await db.insert(users).values({ id: OWNER_USER_ID, email: 'owner-user@wallet.test' });
     await db.insert(members).values({
       id: OWNER_MEMBER_ID,
@@ -347,7 +347,19 @@ describe('wallet module (PGlite)', () => {
 
     const mine = await mod.service.getByUserId(OWNER_USER_ID);
     expect(mine?.id).toBe(wallet.id);
+    expect(mine?.kind).toBe('LOYALTY');
     expect(await mod.service.getByUserId('11111111-1111-1111-1111-111111111111')).toBeNull();
+
+    // Phase 2F member funds view: the FINANCIAL wallet is a separate wallet the
+    // member resolves via kind. It must not shadow the default LOYALTY lookup.
+    const financial = await mod.service.create(
+      { memberId: OWNER_MEMBER_ID, kind: 'FINANCIAL' },
+      ACTOR,
+    );
+    const mineFinancial = await mod.service.getByUserId(OWNER_USER_ID, 'FINANCIAL');
+    expect(mineFinancial?.id).toBe(financial.id);
+    expect(mineFinancial?.kind).toBe('FINANCIAL');
+    expect((await mod.service.getByUserId(OWNER_USER_ID))?.id).toBe(wallet.id);
   });
 
   it('audits balance-changing operations', async () => {

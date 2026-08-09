@@ -22,5 +22,7 @@ export const PRIMARY_NAV: NavItem[] = [
     primary: true,
   },
   { key: 'wallet', label: 'Wallet', path: ROUTES.wallet, icon: 'wallet', primary: true },
+  { key: 'network', label: 'Network', path: ROUTES.network, icon: 'users', primary: false },
+  { key: 'earnings', label: 'Earnings', path: ROUTES.earnings, icon: 'bar-chart', primary: false },
   { key: 'profile', label: 'Profile', path: ROUTES.profile, icon: 'user', primary: true },
 ];

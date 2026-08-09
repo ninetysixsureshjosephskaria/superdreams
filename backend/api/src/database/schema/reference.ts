@@ -19,7 +19,13 @@ export const countries = pgTable(
   ],
 );
 
-/** ISO 4217 currencies. */
+/**
+ * ISO 4217 currencies. Phase 2C extends this reference table with the fixed
+ * internal **per-unit asset value** (the value of 1 SD unit expressed in this
+ * currency's major units — USD base = 30, i.e. 1 unit = $30). There is no live
+ * forex: values are a fixed internal table maintained by admins. `isBase` marks
+ * the immutable, undeletable USD base row.
+ */
 export const currencies = pgTable(
   'currencies',
   {
@@ -28,6 +34,12 @@ export const currencies = pgTable(
     name: text('name').notNull(),
     symbol: text('symbol'),
     decimalDigits: integer('decimal_digits').notNull().default(2),
+    /** Value of 1 SD unit in this currency's major units (USD = 30). 0 = not yet priced. */
+    perUnitValue: integer('per_unit_value').notNull().default(0),
+    /** The immutable base currency (USD). Exactly one row is the base. */
+    isBase: boolean('is_base').notNull().default(false),
+    /** Optional flag asset slug for the picker (the heavy flag library stays client-side). */
+    flagSlug: text('flag_slug'),
     isActive: boolean('is_active').notNull().default(true),
   },
   (table) => [uniqueIndex('currencies_code_uq').on(table.code)],

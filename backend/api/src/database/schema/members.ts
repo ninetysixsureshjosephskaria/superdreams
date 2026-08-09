@@ -8,6 +8,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 
 import { baseColumns } from './columns';
@@ -32,6 +33,14 @@ export const members = pgTable(
     phone: text('phone'),
     status: recordStatus('status').notNull().default('PENDING'),
     joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
+    /**
+     * Network relationships (Phase 2D). Self-referential, both nullable:
+     * `referredBy` = the member who directly referred this member (the immediate
+     * upline for the downline tree); `partnerId` = the Partner this member belongs
+     * to. Set on invite acceptance. Existing members have both NULL (top-level).
+     */
+    referredBy: uuid('referred_by').references((): AnyPgColumn => members.id),
+    partnerId: uuid('partner_id').references((): AnyPgColumn => members.id),
   },
   (table) => [
     uniqueIndex('members_member_number_uq').on(table.memberNumber),
@@ -39,6 +48,8 @@ export const members = pgTable(
     index('members_status_idx').on(table.status),
     index('members_user_id_idx').on(table.userId),
     index('members_last_name_idx').on(table.lastName),
+    index('members_referred_by_idx').on(table.referredBy),
+    index('members_partner_id_idx').on(table.partnerId),
   ],
 );
 

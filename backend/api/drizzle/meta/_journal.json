@@ -92,6 +92,69 @@
       "when": 1785685132657,
       "tag": "0012_greedy_susan_delgado",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1786195750773,
+      "tag": "0013_wallet_kind",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1786197627442,
+      "tag": "0014_finance_requests_tranches",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1786200036662,
+      "tag": "0015_finance_limits_currencies",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1786218118331,
+      "tag": "0016_network_invites",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1786219516508,
+      "tag": "0017_tranche_fee",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1786220169031,
+      "tag": "0018_commission",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1786221243775,
+      "tag": "0019_daily_profit",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1786222364362,
+      "tag": "0020_bonus_campaigns",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1786223077011,
+      "tag": "0021_activation_bonus",
+      "breakpoints": true
     }
   ]
 }
