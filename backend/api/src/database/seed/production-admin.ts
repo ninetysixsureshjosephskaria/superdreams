@@ -1,8 +1,8 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, or } from 'drizzle-orm';
 
 import { config } from '@/config';
 import type { Database } from '@/database/client';
-import { roles, userRoles, users } from '@/database/schema';
+import { loginHistory, roles, userRoles, users } from '@/database/schema';
 import { hashPassword } from '@/modules/identity/services';
 import { syncRbacCatalog } from '@/modules/rbac/seed';
 
@@ -34,10 +34,16 @@ export const ADMIN_INITIAL_PASSWORD = 'ChangeMe123!';
  *
  * Break-glass recovery (`resetPassword` set, from `ADMIN_PASSWORD_RESET`):
  * additionally reset the admin to a known-good login state — password =
- * `resetPassword`, status ACTIVE, email verified, `mustChangePassword` false.
- * This is the only path that overwrites an existing admin password, and it runs
- * only while the env var is present (operator sets it, redeploys once, then
- * removes it). It is not a backdoor and does not weaken auth or RBAC.
+ * `resetPassword`, status ACTIVE, email verified, `mustChangePassword` false —
+ * AND clear the login lockout. Lockout is not a user column: `login()` rejects
+ * once the recent failed `login_history` rows for the email cross the threshold
+ * within a rolling window (see auth.service `assertNotLockedOut`). A password
+ * reset alone therefore leaves a locked-out admin still locked, so recovery also
+ * deletes that account's failed login-history rows (scoped to the admin only).
+ * This is the only path that overwrites an existing admin password or clears its
+ * lockout, and it runs only while the env var is present (operator sets it,
+ * redeploys once, then removes it). It is not a backdoor and does not weaken auth
+ * or RBAC — normal login lockout for every account, admin included, is untouched.
  */
 export async function seedProductionAdmin(
   db: Database,
@@ -83,9 +89,26 @@ export async function seedProductionAdmin(
         mustChangePassword: false,
       })
       .where(eq(users.id, adminId));
+
+    // Clear the login lockout. It is DERIVED — login() counts recent failed
+    // `login_history` rows for the email and rejects once they cross the
+    // threshold — so resetting the password is not enough; the failed rows must
+    // be removed too. Scoped strictly to the bootstrap admin (its email and its
+    // user id) so no other account's history or lock state is affected. Only
+    // failures are deleted; the account's successful-login audit trail is kept.
+    await db
+      .delete(loginHistory)
+      .where(
+        and(
+          eq(loginHistory.success, false),
+          or(eq(loginHistory.email, ADMIN_EMAIL), eq(loginHistory.userId, adminId)),
+        ),
+      );
+
     process.stdout.write(
-      '[seed] production-admin: ADMIN_PASSWORD_RESET applied — password reset and ' +
-        'account reactivated. Remove ADMIN_PASSWORD_RESET now to prevent re-applying.\n',
+      '[seed] production-admin: ADMIN_PASSWORD_RESET applied — password reset, account ' +
+        'reactivated, and login lockout cleared. Remove ADMIN_PASSWORD_RESET now to prevent ' +
+        're-applying.\n',
     );
   }
   if (!adminId) {
