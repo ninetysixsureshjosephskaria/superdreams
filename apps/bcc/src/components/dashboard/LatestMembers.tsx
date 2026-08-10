@@ -1,20 +1,7 @@
+import { StatusPill } from '@/components/status-pill';
 import { useMembers } from '@/features/members/hooks';
-import type { MemberStatus, MemberSummary } from '@superdreams/api-client';
-import {
-  Badge,
-  ContentCard,
-  DataTable,
-  type BadgeVariant,
-  type DataTableColumn,
-} from '@superdreams/ui';
-
-const statusVariant: Record<MemberStatus, BadgeVariant> = {
-  ACTIVE: 'success',
-  PENDING: 'warning',
-  SUSPENDED: 'destructive',
-  INACTIVE: 'secondary',
-  ARCHIVED: 'outline',
-};
+import type { MemberSummary } from '@superdreams/api-client';
+import { ContentCard, DataTable, type DataTableColumn } from '@superdreams/ui';
 
 const columns: DataTableColumn<MemberSummary>[] = [
   {
@@ -30,15 +17,17 @@ const columns: DataTableColumn<MemberSummary>[] = [
   {
     id: 'status',
     header: 'Status',
-    cell: (member) => (
-      <Badge variant={statusVariant[member.status]}>{member.status.toLowerCase()}</Badge>
-    ),
+    cell: (member) => <StatusPill status={member.status} />,
   },
   {
     id: 'joined',
     header: 'Joined',
     align: 'right',
-    cell: (member) => new Date(member.joinedAt).toLocaleDateString(),
+    cell: (member) => (
+      <span className="tabular-nums text-muted-foreground">
+        {new Date(member.joinedAt).toLocaleDateString()}
+      </span>
+    ),
   },
 ];
 

@@ -40,7 +40,18 @@ export default function TemplateEditPage() {
   if (templateQuery.isError || !templateQuery.data) {
     return (
       <Alert variant="destructive" title="Could not load template">
-        {templateQuery.error?.message ?? 'The template could not be found.'}
+        <div className="space-y-3">
+          <p>{templateQuery.error?.message ?? 'The template could not be found.'}</p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              void templateQuery.refetch();
+            }}
+          >
+            Try again
+          </Button>
+        </div>
       </Alert>
     );
   }
@@ -115,7 +126,7 @@ export default function TemplateEditPage() {
               Render preview
             </Button>
             {preview ? (
-              <div className="rounded-md border p-3 text-sm">
+              <div className="rounded-surface border p-3 text-sm">
                 {preview.subject ? <p className="font-medium">{preview.subject}</p> : null}
                 <p className="whitespace-pre-wrap text-muted-foreground">{preview.body}</p>
                 {preview.missingVariables.length > 0 ? (

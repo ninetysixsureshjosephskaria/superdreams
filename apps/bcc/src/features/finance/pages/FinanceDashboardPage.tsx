@@ -2,6 +2,7 @@ import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 
 import { PageHeader } from '@/components/page-header';
+import { SectionHeading } from '@/components/section-heading';
 import { ROUTES } from '@/constants';
 import type { FinancialRequestData } from '@superdreams/api-client';
 import {
@@ -10,6 +11,7 @@ import {
   ContentCard,
   DataTable,
   Icon,
+  Skeleton,
   StatCard,
   type DataTableColumn,
 } from '@superdreams/ui';
@@ -22,15 +24,29 @@ const RECENT_PARAMS = { pageSize: 8, sortBy: 'createdAt', order: 'desc' } as con
 
 const columns: DataTableColumn<FinancialRequestData>[] = [
   { id: 'type', header: 'Type', cell: (row) => <TypeBadge type={row.type} /> },
-  { id: 'requestNumber', header: 'Request', cell: (row) => row.requestNumber },
-  { id: 'units', header: 'Units', align: 'right', cell: (row) => row.units.toLocaleString() },
-  { id: 'amount', header: 'Amount', align: 'right', cell: (row) => usd(row.amountCents) },
+  {
+    id: 'requestNumber',
+    header: 'Request',
+    cell: (row) => <span className="tabular-nums">{row.requestNumber}</span>,
+  },
+  {
+    id: 'units',
+    header: 'Units',
+    align: 'right',
+    cell: (row) => <span className="tabular-nums">{row.units.toLocaleString()}</span>,
+  },
+  {
+    id: 'amount',
+    header: 'Amount',
+    align: 'right',
+    cell: (row) => <span className="font-medium tabular-nums">{usd(row.amountCents)}</span>,
+  },
   { id: 'status', header: 'Status', cell: (row) => <StatusBadge status={row.status} /> },
   {
     id: 'createdAt',
     header: 'Submitted',
     align: 'right',
-    cell: (row) => new Date(row.createdAt).toLocaleString(),
+    cell: (row) => <span className="tabular-nums">{new Date(row.createdAt).toLocaleString()}</span>,
   },
 ];
 
@@ -84,19 +100,19 @@ export default function FinanceDashboardPage() {
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Pending deposits"
-          value={count(pendingDeposits.data?.total)}
+          value={<span className="tabular-nums">{count(pendingDeposits.data?.total)}</span>}
           hint="awaiting approval"
           icon={<Icon name="wallet" size="sm" />}
         />
         <StatCard
           label="Pending withdrawals"
-          value={count(pendingWithdrawals.data?.total)}
+          value={<span className="tabular-nums">{count(pendingWithdrawals.data?.total)}</span>}
           hint="awaiting approval"
           icon={<Icon name="receipt" size="sm" />}
         />
         <StatCard
           label="On hold"
-          value={count(held.data?.total)}
+          value={<span className="tabular-nums">{count(held.data?.total)}</span>}
           hint="deposits + withdrawals"
           icon={<Icon name="alert-triangle" size="sm" />}
         />
@@ -109,10 +125,22 @@ export default function FinanceDashboardPage() {
       </div>
 
       <div className="mb-6">
-        <h2 className="mb-3 text-lg font-semibold">Recent requests</h2>
+        <SectionHeading title="Recent requests" />
+
         {recent.isError ? (
           <Alert variant="destructive" title="Could not load recent requests">
-            {recent.error.message}
+            <div className="space-y-3">
+              <p>{recent.error.message}</p>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  void recent.refetch();
+                }}
+              >
+                Try again
+              </Button>
+            </div>
           </Alert>
         ) : (
           <DataTable
@@ -124,39 +152,53 @@ export default function FinanceDashboardPage() {
         )}
       </div>
 
-      <ContentCard>
-        <h2 className="mb-3 text-lg font-semibold">Limits &amp; policy</h2>
+      <ContentCard title="Limits & policy">
         {limits.isError ? (
           <Alert variant="destructive" title="Could not load limits">
-            {limits.error.message}
+            <div className="space-y-3">
+              <p>{limits.error.message}</p>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  void limits.refetch();
+                }}
+              >
+                Try again
+              </Button>
+            </div>
           </Alert>
         ) : limits.data ? (
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-3">
             <div className="flex justify-between">
               <dt className="text-muted-foreground">Min deposit</dt>
-              <dd className="font-medium">{limits.data.minDepositUnits} units</dd>
+              <dd className="font-medium tabular-nums">{limits.data.minDepositUnits} units</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-muted-foreground">Max deposit</dt>
-              <dd className="font-medium">{limits.data.maxDepositUnits} units</dd>
+              <dd className="font-medium tabular-nums">{limits.data.maxDepositUnits} units</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-muted-foreground">Min withdrawal</dt>
-              <dd className="font-medium">{usd(limits.data.minWithdrawCents)}</dd>
+              <dd className="font-medium tabular-nums">{usd(limits.data.minWithdrawCents)}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-muted-foreground">Early-withdraw fee</dt>
-              <dd className="font-medium">{limits.data.earlyWithdrawFeeBps / 100}%</dd>
+              <dd className="font-medium tabular-nums">{limits.data.earlyWithdrawFeeBps / 100}%</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-muted-foreground">Processing time</dt>
-              <dd className="font-medium">
+              <dd className="font-medium tabular-nums">
                 {limits.data.processingMinDays}–{limits.data.processingMaxDays} days
               </dd>
             </div>
           </dl>
         ) : (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3" aria-hidden="true">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <Skeleton key={index} className="h-4 w-full" />
+            ))}
+          </div>
         )}
       </ContentCard>
     </>

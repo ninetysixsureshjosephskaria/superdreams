@@ -25,11 +25,11 @@ export function NavList({ items, collapsed = false, onNavigate }: NavListProps) 
             title={collapsed ? item.label : undefined}
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-[colors,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:active:scale-[0.98]',
                 collapsed && 'justify-center px-2',
                 isActive
-                  ? 'bg-accent text-accent-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                  ? 'bg-accent font-semibold text-accent-foreground'
+                  : 'text-muted-foreground hover:bg-accent/60 hover:text-accent-foreground',
               )
             }
           >

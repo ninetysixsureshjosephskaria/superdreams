@@ -45,7 +45,7 @@ export function Accordion({ items, type = 'single', defaultValue, className }: A
   };
 
   return (
-    <div className={cn('divide-y rounded-lg border', className)}>
+    <div className={cn('divide-y rounded-card border', className)}>
       {items.map((item) => {
         const isOpen = open.has(item.value);
         return (

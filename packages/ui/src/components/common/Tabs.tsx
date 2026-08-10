@@ -63,7 +63,7 @@ export function Tabs({ items, value, defaultValue, onValueChange, className }: T
       <div
         role="tablist"
         aria-orientation="horizontal"
-        className="inline-flex items-center gap-1 rounded-lg border bg-muted p-1"
+        className="inline-flex items-center gap-1 rounded-control border bg-muted p-1"
       >
         {items.map((item) => {
           const selected = item.value === active;
@@ -82,7 +82,7 @@ export function Tabs({ items, value, defaultValue, onValueChange, className }: T
                 select(item.value);
               }}
               className={cn(
-                'inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+                'inline-flex items-center rounded-control px-3 py-1.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
                 selected
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground',

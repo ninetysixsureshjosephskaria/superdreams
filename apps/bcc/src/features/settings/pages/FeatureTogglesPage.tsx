@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 
 import { PageHeader } from '@/components/page-header';
+import { StatusPill } from '@/components/status-pill';
 import { useNotificationStore } from '@/store';
-import { Alert, Button, ContentCard, Input, Spinner, Switch } from '@superdreams/ui';
+import { Alert, Button, ContentCard, EmptyState, Input, Spinner, Switch } from '@superdreams/ui';
 
 import { useCreateFeatureToggle, useFeatureToggles, useUpdateFeatureToggle } from '../hooks';
 
@@ -76,12 +77,30 @@ export default function FeatureTogglesPage() {
 
       {toggles.isError ? (
         <Alert variant="destructive" title="Could not load feature flags">
-          {toggles.error.message}
+          <div className="space-y-3">
+            <p>{toggles.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void toggles.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : toggles.isPending ? (
         <div className="flex justify-center py-12">
           <Spinner />
         </div>
+      ) : toggles.data.length === 0 ? (
+        <ContentCard title="Feature flags">
+          <EmptyState
+            title="No feature flags yet"
+            description="Create a feature flag above to start controlling platform features."
+          />
+        </ContentCard>
       ) : (
         <ContentCard title="Feature flags">
           {toggles.data.map((toggle) => (
@@ -96,22 +115,25 @@ export default function FeatureTogglesPage() {
                   {toggle.description ? ` — ${toggle.description}` : ''}
                 </p>
               </div>
-              <Switch
-                checked={toggle.enabled}
-                onCheckedChange={(enabled) => {
-                  update.mutate(
-                    { id: toggle.id, input: { enabled } },
-                    {
-                      onSuccess: () =>
-                        notify({
-                          variant: 'success',
-                          title: enabled ? 'Enabled' : 'Disabled',
-                          description: toggle.name,
-                        }),
-                    },
-                  );
-                }}
-              />
+              <div className="flex items-center gap-3">
+                <StatusPill status={toggle.enabled ? 'enabled' : 'disabled'} />
+                <Switch
+                  checked={toggle.enabled}
+                  onCheckedChange={(enabled) => {
+                    update.mutate(
+                      { id: toggle.id, input: { enabled } },
+                      {
+                        onSuccess: () =>
+                          notify({
+                            variant: 'success',
+                            title: enabled ? 'Enabled' : 'Disabled',
+                            description: toggle.name,
+                          }),
+                      },
+                    );
+                  }}
+                />
+              </div>
             </div>
           ))}
         </ContentCard>

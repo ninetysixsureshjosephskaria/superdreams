@@ -1,7 +1,9 @@
-import { useEffect, useId, type ReactNode } from 'react';
+import { useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 import { cn } from '@superdreams/utils';
+
+import { useDialogA11y } from '../../hooks';
 
 export type DrawerSide = 'left' | 'right';
 
@@ -32,21 +34,9 @@ export function Drawer({
 }: DrawerProps) {
   const titleId = useId();
   const descriptionId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!isOpen) {
-      return undefined;
-    }
-    const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [isOpen, onClose]);
+  useDialogA11y({ isOpen, onClose, dialogRef });
 
   if (!isOpen) {
     return null;
@@ -58,15 +48,17 @@ export function Drawer({
         type="button"
         aria-label="Close panel"
         onClick={onClose}
-        className="absolute inset-0 animate-fade-in bg-black/50"
+        className="absolute inset-0 animate-fade-in bg-black/50 [backdrop-filter:blur(var(--overlay-blur,0px))]"
       />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
+        tabIndex={-1}
         className={cn(
-          'relative z-10 ml-auto flex h-full w-full max-w-md flex-col border-l bg-card text-card-foreground shadow-overlay',
+          'relative z-10 ml-auto flex h-full w-full max-w-md flex-col border-l bg-card text-card-foreground shadow-overlay focus:outline-none',
           side === 'left'
             ? 'mr-auto ml-0 animate-slide-in-left border-l-0 border-r'
             : 'animate-slide-in-right',

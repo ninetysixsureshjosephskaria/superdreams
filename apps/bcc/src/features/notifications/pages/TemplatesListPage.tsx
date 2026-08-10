@@ -131,7 +131,18 @@ export default function TemplatesListPage() {
 
       {query.isError ? (
         <Alert variant="destructive" title="Could not load templates">
-          {query.error.message}
+          <div className="space-y-3">
+            <p>{query.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void query.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <DataTable
@@ -155,7 +166,9 @@ export default function TemplatesListPage() {
 
       {query.data ? (
         <div className="mt-4 flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">{query.data.total} templates</p>
+          <p className="text-sm text-muted-foreground">
+            <span className="tabular-nums">{query.data.total}</span> templates
+          </p>
           <Pagination
             page={query.data.page}
             pageCount={query.data.totalPages}

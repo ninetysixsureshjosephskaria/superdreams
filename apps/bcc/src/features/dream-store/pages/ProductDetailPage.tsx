@@ -55,9 +55,19 @@ export default function ProductDetailPage() {
           title="Not found"
           description={productQuery.error.message}
           action={
-            <Button variant="outline" onClick={() => navigate('/dream-store/products')}>
-              Back to products
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  void productQuery.refetch();
+                }}
+              >
+                Try again
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/dream-store/products')}>
+                Back to products
+              </Button>
+            </div>
           }
         />
       </>
@@ -149,14 +159,20 @@ export default function ProductDetailPage() {
             <DetailRow label="Required points" value={product.points.toLocaleString()} />
             <DetailRow
               label="Status"
-              value={<Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>}
+              value={
+                <Badge soft variant={statusMeta.variant}>
+                  {statusMeta.label}
+                </Badge>
+              }
             />
             <DetailRow
               label="Stock"
               value={
                 <span className="flex items-center gap-2">
                   {product.stock}
-                  <Badge variant={stockMeta.variant}>{stockMeta.label}</Badge>
+                  <Badge soft variant={stockMeta.variant}>
+                    {stockMeta.label}
+                  </Badge>
                 </span>
               }
             />

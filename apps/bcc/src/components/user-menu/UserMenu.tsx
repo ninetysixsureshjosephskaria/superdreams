@@ -6,7 +6,7 @@ import { useSessionStore } from '@/store';
 import { Avatar, DropdownMenu, Icon } from '@superdreams/ui';
 
 const TRIGGER_CLASS =
-  'inline-flex items-center gap-2 rounded-md p-1 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+  'inline-flex items-center gap-2 rounded-control p-1 transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:active:scale-[var(--press-scale-icon)]';
 
 /** Admin user menu with real sign-out (revokes the server session). */
 export function UserMenu() {

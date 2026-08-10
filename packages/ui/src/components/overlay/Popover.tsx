@@ -69,7 +69,7 @@ export function Popover({
         <div
           role="dialog"
           className={cn(
-            'absolute top-full z-popover mt-2 min-w-48 animate-scale-in rounded-md border bg-popover p-3 text-popover-foreground shadow-overlay',
+            'absolute top-full z-popover mt-2 min-w-48 animate-scale-in rounded-menu border bg-popover p-3 text-popover-foreground shadow-overlay',
             alignClasses[align],
             className,
           )}

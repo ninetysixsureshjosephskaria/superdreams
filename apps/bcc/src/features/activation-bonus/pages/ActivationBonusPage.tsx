@@ -197,6 +197,7 @@ function SweepCard() {
         description="This evaluates every recruiter and credits a real activation bonus (TXN-A) to each member who now qualifies. It moves money. The run is idempotent — already-granted members are skipped."
         confirmLabel="Run sweep"
         tone="destructive"
+        mobileSheet
         isConfirming={sweep.isPending}
         onConfirm={run}
         onCancel={() => setConfirming(false)}
@@ -226,7 +227,18 @@ export default function ActivationBonusPage() {
         <LoadingScreen message="Loading activation config…" />
       ) : query.isError || !query.data ? (
         <Alert variant="destructive" title="Could not load activation config">
-          {query.error?.message ?? 'The config is unavailable.'}
+          <div className="space-y-3">
+            <p>{query.error?.message ?? 'The config is unavailable.'}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void query.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <div className="space-y-6">

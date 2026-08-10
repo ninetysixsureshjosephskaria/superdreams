@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 
 import { PageHeader } from '@/components/page-header';
+import { StatusPill } from '@/components/status-pill';
 import { useNotificationStore } from '@/store';
 import type { ReportExportData } from '@superdreams/api-client';
-import { Alert, Badge, Button, DataTable, Pagination, type DataTableColumn } from '@superdreams/ui';
+import { Alert, Button, DataTable, Pagination, type DataTableColumn } from '@superdreams/ui';
 
 import { reportsApi } from '../api';
 import { downloadTextFile } from '../format';
@@ -34,13 +35,18 @@ export default function ExportHistoryPage() {
   const columns: DataTableColumn<ReportExportData>[] = [
     { id: 'report', header: 'Report', cell: (e) => e.reportCode },
     { id: 'format', header: 'Format', cell: (e) => e.format },
-    { id: 'status', header: 'Status', cell: (e) => <Badge>{e.status}</Badge> },
-    { id: 'rows', header: 'Rows', align: 'right', cell: (e) => e.rowCount.toLocaleString() },
+    { id: 'status', header: 'Status', cell: (e) => <StatusPill status={e.status} /> },
+    {
+      id: 'rows',
+      header: 'Rows',
+      align: 'right',
+      cell: (e) => <span className="tabular-nums">{e.rowCount.toLocaleString()}</span>,
+    },
     {
       id: 'created',
       header: 'Created',
       align: 'right',
-      cell: (e) => new Date(e.createdAt).toLocaleString(),
+      cell: (e) => <span className="tabular-nums">{new Date(e.createdAt).toLocaleString()}</span>,
     },
   ];
 
@@ -53,7 +59,18 @@ export default function ExportHistoryPage() {
 
       {query.isError ? (
         <Alert variant="destructive" title="Could not load exports">
-          {query.error.message}
+          <div className="space-y-3">
+            <p>{query.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void query.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <DataTable
@@ -73,7 +90,9 @@ export default function ExportHistoryPage() {
 
       {query.data ? (
         <div className="mt-4 flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">{query.data.total} exports</p>
+          <p className="text-sm text-muted-foreground">
+            <span className="tabular-nums">{query.data.total}</span> exports
+          </p>
           <Pagination
             page={query.data.page}
             pageCount={query.data.totalPages}

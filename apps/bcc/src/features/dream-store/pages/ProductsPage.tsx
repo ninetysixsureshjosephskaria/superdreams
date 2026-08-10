@@ -150,7 +150,9 @@ export default function ProductsPage() {
         return (
           <span className="flex items-center gap-2">
             <span className="tabular-nums">{product.stock}</span>
-            <Badge variant={meta.variant}>{meta.label}</Badge>
+            <Badge soft variant={meta.variant}>
+              {meta.label}
+            </Badge>
           </span>
         );
       },
@@ -160,7 +162,11 @@ export default function ProductsPage() {
       header: 'Status',
       cell: (product) => {
         const meta = PRODUCT_STATUS_META[product.status];
-        return <Badge variant={meta.variant}>{meta.label}</Badge>;
+        return (
+          <Badge soft variant={meta.variant}>
+            {meta.label}
+          </Badge>
+        );
       },
     },
   ];
@@ -227,7 +233,18 @@ export default function ProductsPage() {
 
       {productsQuery.isError ? (
         <Alert variant="destructive" title="Could not load products">
-          {productsQuery.error.message}
+          <div className="space-y-3">
+            <p>{productsQuery.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void productsQuery.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <>

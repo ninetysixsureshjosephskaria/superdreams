@@ -103,7 +103,11 @@ export default function CategoriesPage() {
       header: 'Status',
       cell: (category) => {
         const meta = categoryStatusMeta(category.isActive);
-        return <Badge variant={meta.variant}>{meta.label}</Badge>;
+        return (
+          <Badge soft variant={meta.variant}>
+            {meta.label}
+          </Badge>
+        );
       },
     },
   ];
@@ -138,7 +142,18 @@ export default function CategoriesPage() {
 
       {categoriesQuery.isError ? (
         <Alert variant="destructive" title="Could not load categories">
-          {categoriesQuery.error.message}
+          <div className="space-y-3">
+            <p>{categoriesQuery.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void categoriesQuery.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <>

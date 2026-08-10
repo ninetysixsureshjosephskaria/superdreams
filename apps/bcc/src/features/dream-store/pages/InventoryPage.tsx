@@ -89,7 +89,11 @@ export default function InventoryPage() {
       header: 'Stock status',
       cell: (product) => {
         const meta = STOCK_STATUS_META[product.stockStatus];
-        return <Badge variant={meta.variant}>{meta.label}</Badge>;
+        return (
+          <Badge soft variant={meta.variant}>
+            {meta.label}
+          </Badge>
+        );
       },
     },
   ];
@@ -129,7 +133,18 @@ export default function InventoryPage() {
 
       {inventoryQuery.isError ? (
         <Alert variant="destructive" title="Could not load inventory">
-          {inventoryQuery.error.message}
+          <div className="space-y-3">
+            <p>{inventoryQuery.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void inventoryQuery.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <>

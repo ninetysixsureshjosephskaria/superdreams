@@ -23,7 +23,7 @@ const trendClasses: Record<StatTrendDirection, string> = {
 export function StatCard({ label, value, icon, hint, trend, className }: StatCardProps) {
   return (
     <div
-      className={cn('rounded-lg border bg-card p-5 text-card-foreground shadow-card', className)}
+      className={cn('rounded-card border bg-card p-5 text-card-foreground shadow-card', className)}
     >
       <div className="flex items-start justify-between gap-4">
         <p className="text-sm font-medium text-muted-foreground">{label}</p>

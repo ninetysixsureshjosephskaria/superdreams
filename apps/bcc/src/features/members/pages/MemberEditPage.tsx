@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/page-header';
 import { useNotificationStore } from '@/store';
 import type { UpdateMemberInput } from '@superdreams/api-client';
-import { Alert, LoadingScreen } from '@superdreams/ui';
+import { Alert, Button, LoadingScreen } from '@superdreams/ui';
 
 import { MemberForm } from '../components/MemberForm';
 import { useMember, useUpdateMember } from '../hooks';
@@ -34,7 +34,18 @@ export default function MemberEditPage() {
   if (memberQuery.isError || !memberQuery.data) {
     return (
       <Alert variant="destructive" title="Could not load member">
-        {memberQuery.error?.message ?? 'The member could not be found.'}
+        <div className="space-y-3">
+          <p>{memberQuery.error?.message ?? 'The member could not be found.'}</p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              void memberQuery.refetch();
+            }}
+          >
+            Try again
+          </Button>
+        </div>
       </Alert>
     );
   }

@@ -1,5 +1,5 @@
 export { WelcomeSection } from './WelcomeSection';
-export { StatCards } from './StatCards';
+export { StatCards, StatCardsSkeleton } from './StatCards';
 export { RecentActivity } from './RecentActivity';
 export { LatestMembers } from './LatestMembers';
 export { NotificationsPanel } from './NotificationsPanel';

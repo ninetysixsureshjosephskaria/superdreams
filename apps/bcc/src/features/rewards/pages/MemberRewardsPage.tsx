@@ -104,7 +104,18 @@ function HistoryPanel({ memberId }: { memberId: string }) {
       </div>
       {query.isError ? (
         <Alert variant="destructive" title="Could not load history">
-          {query.error.message}
+          <div className="space-y-3">
+            <p>{query.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void query.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <DataTable
@@ -218,7 +229,18 @@ export default function MemberRewardsPage() {
       <>
         <PageHeader title="Member rewards" />
         <Alert variant="destructive" title="Could not load member rewards">
-          {query.error?.message ?? 'The member could not be found.'}
+          <div className="space-y-3">
+            <p>{query.error?.message ?? 'The member could not be found.'}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void query.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
         <div className="mt-4">
           <Button variant="ghost" onClick={() => navigate('/rewards')}>

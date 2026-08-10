@@ -14,3 +14,14 @@ export interface NavItem {
   permission?: string;
   children?: NavItem[];
 }
+
+/**
+ * A labelled group of navigation items (Super Dreams IA: Overview, Members &
+ * Network, Finance, Engagement, Insights, System). Purely a presentation grouping
+ * — routes, labels and permissions are unchanged.
+ */
+export interface NavSection {
+  key: string;
+  label: string;
+  items: NavItem[];
+}

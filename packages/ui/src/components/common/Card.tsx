@@ -6,7 +6,7 @@ import { cn } from '@superdreams/utils';
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('rounded-lg border bg-card text-card-foreground shadow-card', className)}
+      className={cn('rounded-card border bg-card text-card-foreground shadow-card', className)}
       {...props}
     />
   );

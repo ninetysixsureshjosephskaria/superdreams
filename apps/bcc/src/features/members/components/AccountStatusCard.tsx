@@ -133,6 +133,7 @@ export function AccountStatusCard({ id }: { id: string }) {
         }
         confirmLabel={pending?.label ?? 'Confirm'}
         tone={pending?.destructive ? 'destructive' : 'default'}
+        mobileSheet
         isConfirming={changeAccount.isPending}
         onConfirm={confirm}
         onCancel={() => setPending(null)}

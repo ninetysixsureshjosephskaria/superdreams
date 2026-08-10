@@ -24,8 +24,14 @@ export function TransactionTypeBadge({
 }) {
   return (
     <span className="inline-flex items-center gap-1">
-      <Badge variant={variantByType[type]}>{label(type)}</Badge>
-      {status === 'REVERSED' ? <Badge variant="outline">Reversed</Badge> : null}
+      <Badge soft variant={variantByType[type]}>
+        {label(type)}
+      </Badge>
+      {status === 'REVERSED' ? (
+        <Badge soft variant="outline">
+          Reversed
+        </Badge>
+      ) : null}
     </span>
   );
 }

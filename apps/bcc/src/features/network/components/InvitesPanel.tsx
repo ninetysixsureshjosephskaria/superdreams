@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { StatusPill } from '@/components/status-pill';
 import type { Invite, InviteRole, InviteStatus } from '@superdreams/api-client';
 import {
   Alert,
@@ -13,7 +14,6 @@ import {
   Modal,
   Pagination,
   Select,
-  type BadgeVariant,
   type DataTableColumn,
 } from '@superdreams/ui';
 
@@ -34,13 +34,6 @@ const STATUS_OPTIONS = [
   { label: 'Expired', value: 'EXPIRED' },
   { label: 'Revoked', value: 'REVOKED' },
 ];
-
-const STATUS_VARIANT: Record<InviteStatus, BadgeVariant> = {
-  PENDING: 'warning',
-  USED: 'success',
-  EXPIRED: 'secondary',
-  REVOKED: 'destructive',
-};
 
 function CreateInviteDialog({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const create = useCreateInvite();
@@ -72,7 +65,7 @@ function CreateInviteDialog({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Create invite">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Create invite" mobileSheet>
       {created ? (
         <div className="space-y-4">
           <Alert variant="success" title="Invite created">
@@ -162,26 +155,36 @@ export function InvitesPanel() {
       header: 'Code',
       cell: (row) => <span className="font-mono text-xs">{row.code}</span>,
     },
-    { id: 'role', header: 'Role', cell: (row) => <Badge variant="outline">{row.role}</Badge> },
     {
-      id: 'status',
-      header: 'Status',
+      id: 'role',
+      header: 'Role',
       cell: (row) => (
-        <Badge variant={STATUS_VARIANT[row.status]}>
-          {row.status.charAt(0) + row.status.slice(1).toLowerCase()}
+        <Badge soft variant="secondary">
+          {row.role}
         </Badge>
       ),
     },
     {
+      id: 'status',
+      header: 'Status',
+      cell: (row) => <StatusPill status={row.status} />,
+    },
+    {
       id: 'expiresAt',
       header: 'Expires',
-      cell: (row) => (row.expiresAt ? new Date(row.expiresAt).toLocaleDateString() : '—'),
+      cell: (row) => (
+        <span className="tabular-nums">
+          {row.expiresAt ? new Date(row.expiresAt).toLocaleDateString() : '—'}
+        </span>
+      ),
     },
     {
       id: 'createdAt',
       header: 'Created',
       align: 'right',
-      cell: (row) => new Date(row.createdAt).toLocaleString(),
+      cell: (row) => (
+        <span className="tabular-nums">{new Date(row.createdAt).toLocaleString()}</span>
+      ),
     },
   ];
 
@@ -217,7 +220,18 @@ export function InvitesPanel() {
 
       {query.isError ? (
         <Alert variant="destructive" title="Could not load invites">
-          {query.error.message}
+          <div className="space-y-3">
+            <p>{query.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void query.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : !query.isPending && query.data && query.data.items.length === 0 ? (
         <EmptyState title="No invites" description="Create an invite to grow the network." />
@@ -272,6 +286,7 @@ export function InvitesPanel() {
         }
         confirmLabel={pending?.action === 'revoke' ? 'Revoke' : 'Delete'}
         tone="destructive"
+        mobileSheet
         isConfirming={mutating}
         onConfirm={confirmAction}
         onCancel={() => setPending(null)}

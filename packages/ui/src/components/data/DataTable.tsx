@@ -104,7 +104,7 @@ export function DataTable<TRow>({
   };
 
   return (
-    <div className={cn('w-full overflow-x-auto rounded-lg border', className)}>
+    <div className={cn('w-full overflow-x-auto rounded-card border', className)}>
       <table className="w-full caption-bottom text-sm">
         <thead className="border-b bg-muted/50">
           <tr>

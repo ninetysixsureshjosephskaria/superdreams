@@ -9,6 +9,7 @@ import type { MemberDetail } from '@superdreams/api-client';
 import {
   Alert,
   Button,
+  ConfirmationDialog,
   ContentCard,
   DropdownMenu,
   EmptyState,
@@ -258,6 +259,7 @@ export default function MemberDetailsPage() {
   const memberQuery = useMember(id);
   const changeStatus = useChangeMemberStatus(id);
   const archive = useArchiveMember();
+  const [archiveOpen, setArchiveOpen] = useState(false);
 
   if (memberQuery.isPending) {
     return <LoadingScreen message="Loading member…" />;
@@ -265,7 +267,18 @@ export default function MemberDetailsPage() {
   if (memberQuery.isError || !memberQuery.data) {
     return (
       <Alert variant="destructive" title="Could not load member">
-        {memberQuery.error?.message ?? 'The member could not be found.'}
+        <div className="space-y-3">
+          <p>{memberQuery.error?.message ?? 'The member could not be found.'}</p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              void memberQuery.refetch();
+            }}
+          >
+            Try again
+          </Button>
+        </div>
       </Alert>
     );
   }
@@ -306,7 +319,7 @@ export default function MemberDetailsPage() {
             </Button>
             <DropdownMenu
               align="end"
-              triggerClassName="inline-flex h-10 w-10 items-center justify-center rounded-md border border-input hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              triggerClassName="inline-flex h-10 w-10 items-center justify-center rounded-control border border-input transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:active:scale-[var(--press-scale-icon)]"
               trigger={
                 <>
                   <Icon name="more-horizontal" size="sm" />
@@ -334,19 +347,42 @@ export default function MemberDetailsPage() {
                   label: 'Archive',
                   icon: <Icon name="trash" size="sm" />,
                   destructive: true,
+                  disabled: member.status === 'ARCHIVED',
                   onSelect: () => {
-                    archive.mutate(member.id, {
-                      onSuccess: () => {
-                        notify({ variant: 'success', title: 'Member archived' });
-                        navigate('/members');
-                      },
-                    });
+                    setArchiveOpen(true);
                   },
                 },
               ]}
             />
           </div>
         }
+      />
+
+      <ConfirmationDialog
+        isOpen={archiveOpen}
+        title="Archive this member?"
+        description={`${member.fullName} will be archived and removed from active lists. You can still view their record. This does not delete any data.`}
+        confirmLabel="Archive member"
+        tone="destructive"
+        mobileSheet
+        isConfirming={archive.isPending}
+        onCancel={() => {
+          setArchiveOpen(false);
+        }}
+        onConfirm={() => {
+          archive.mutate(member.id, {
+            onSuccess: () => {
+              notify({ variant: 'success', title: 'Member archived' });
+              navigate('/members');
+            },
+            onError: (error) => {
+              notify({ variant: 'error', title: 'Could not archive', description: error.message });
+            },
+            onSettled: () => {
+              setArchiveOpen(false);
+            },
+          });
+        }}
       />
 
       <Tabs

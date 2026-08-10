@@ -2,7 +2,7 @@ import { useNotificationStore } from '@/store';
 import { DropdownMenu, Icon } from '@superdreams/ui';
 
 const TRIGGER_CLASS =
-  'inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+  'inline-flex h-8 w-8 items-center justify-center rounded-control text-muted-foreground transition hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:active:scale-[var(--press-scale-icon)]';
 
 /** Header quick-actions menu. Actions are mocked (they arrive with their modules). */
 export function QuickActions() {

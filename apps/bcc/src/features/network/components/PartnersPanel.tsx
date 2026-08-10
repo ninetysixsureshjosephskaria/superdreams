@@ -1,22 +1,26 @@
 import type { PartnerNetworkSummary } from '@superdreams/api-client';
-import { Alert, DataTable, EmptyState, type DataTableColumn } from '@superdreams/ui';
+import { Alert, Button, DataTable, EmptyState, type DataTableColumn } from '@superdreams/ui';
 
 import { usePartners } from '../hooks';
 
 const columns: DataTableColumn<PartnerNetworkSummary>[] = [
-  { id: 'name', header: 'Partner', cell: (row) => row.name },
-  { id: 'memberNumber', header: 'Member #', cell: (row) => row.memberNumber },
+  { id: 'name', header: 'Partner', cell: (row) => <span className="font-medium">{row.name}</span> },
+  {
+    id: 'memberNumber',
+    header: 'Member #',
+    cell: (row) => <span className="tabular-nums text-muted-foreground">{row.memberNumber}</span>,
+  },
   {
     id: 'direct',
     header: 'Direct members',
     align: 'right',
-    cell: (row) => row.directMemberCount.toLocaleString(),
+    cell: (row) => <span className="tabular-nums">{row.directMemberCount.toLocaleString()}</span>,
   },
   {
     id: 'total',
     header: 'Total network',
     align: 'right',
-    cell: (row) => row.totalNetworkCount.toLocaleString(),
+    cell: (row) => <span className="tabular-nums">{row.totalNetworkCount.toLocaleString()}</span>,
   },
 ];
 
@@ -27,7 +31,18 @@ export function PartnersPanel() {
   if (query.isError) {
     return (
       <Alert variant="destructive" title="Could not load partners">
-        {query.error.message}
+        <div className="space-y-3">
+          <p>{query.error.message}</p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              void query.refetch();
+            }}
+          >
+            Try again
+          </Button>
+        </div>
       </Alert>
     );
   }

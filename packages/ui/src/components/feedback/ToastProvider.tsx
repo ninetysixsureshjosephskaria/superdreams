@@ -83,7 +83,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
                 return (
                   <div
                     key={item.id}
-                    className="pointer-events-auto flex animate-slide-in-right gap-3 rounded-lg border bg-card p-4 text-sm text-card-foreground shadow-overlay"
+                    className="pointer-events-auto flex animate-slide-in-right gap-3 rounded-card border bg-card p-4 text-sm text-card-foreground shadow-overlay"
                   >
                     <span className={cn('mt-0.5 shrink-0', meta.accent)}>
                       <Icon name={meta.icon} size="sm" />

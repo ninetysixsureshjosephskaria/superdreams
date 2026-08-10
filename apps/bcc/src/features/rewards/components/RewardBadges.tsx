@@ -26,7 +26,11 @@ function titleCase(value: string): string {
 
 /** Reward program status as a design-system badge. */
 export function RewardProgramStatusBadge({ status }: { status: RewardProgramStatus }) {
-  return <Badge variant={programVariant[status]}>{titleCase(status)}</Badge>;
+  return (
+    <Badge soft variant={programVariant[status]}>
+      {titleCase(status)}
+    </Badge>
+  );
 }
 
 /** Reward transaction type (with reversed marker) as badges. */
@@ -39,8 +43,14 @@ export function RewardTxnBadge({
 }) {
   return (
     <span className="inline-flex items-center gap-1">
-      <Badge variant={txnVariant[type]}>{titleCase(type)}</Badge>
-      {status === 'REVERSED' ? <Badge variant="outline">Reversed</Badge> : null}
+      <Badge soft variant={txnVariant[type]}>
+        {titleCase(type)}
+      </Badge>
+      {status === 'REVERSED' ? (
+        <Badge soft variant="outline">
+          Reversed
+        </Badge>
+      ) : null}
     </span>
   );
 }

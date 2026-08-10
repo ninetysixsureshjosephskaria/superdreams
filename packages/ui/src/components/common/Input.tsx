@@ -7,6 +7,8 @@ export type InputSize = 'sm' | 'md' | 'lg';
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   /** Applies error styling and sets `aria-invalid`. */
   invalid?: boolean;
+  /** Applies success styling (e.g. an async availability check passed). */
+  valid?: boolean;
   /** Control height (kept separate from the native numeric `size` attribute). */
   inputSize?: InputSize;
 }
@@ -23,6 +25,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     className,
     type = 'text',
     invalid = false,
+    valid = false,
     inputSize = 'md',
     'aria-invalid': ariaInvalid,
     ...props
@@ -35,8 +38,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       type={type}
       aria-invalid={ariaInvalid ?? (invalid || undefined)}
       className={cn(
-        'flex w-full rounded-md border border-input bg-background px-3 py-2 shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
+        'flex w-full rounded-control border border-input bg-background px-3 py-2 shadow-input transition placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
         sizeClasses[inputSize],
+        valid && !invalid && 'border-success focus-visible:ring-success',
         invalid && 'border-destructive focus-visible:ring-destructive',
         className,
       )}

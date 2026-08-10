@@ -40,7 +40,18 @@ export default function RewardProgramDetailsPage() {
   if (programQuery.isError || !programQuery.data) {
     return (
       <Alert variant="destructive" title="Could not load program">
-        {programQuery.error?.message ?? 'The program could not be found.'}
+        <div className="space-y-3">
+          <p>{programQuery.error?.message ?? 'The program could not be found.'}</p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              void programQuery.refetch();
+            }}
+          >
+            Try again
+          </Button>
+        </div>
       </Alert>
     );
   }
@@ -77,7 +88,7 @@ export default function RewardProgramDetailsPage() {
             </Button>
             <DropdownMenu
               align="end"
-              triggerClassName="inline-flex h-10 w-10 items-center justify-center rounded-md border border-input hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              triggerClassName="inline-flex h-10 w-10 items-center justify-center rounded-control border border-input transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:active:scale-[var(--press-scale-icon)]"
               trigger={
                 <>
                   <Icon name="more-horizontal" size="sm" />

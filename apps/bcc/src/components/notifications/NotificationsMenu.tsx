@@ -5,7 +5,7 @@ import { Badge, Icon, Popover } from '@superdreams/ui';
 import { cn } from '@superdreams/utils';
 
 const TRIGGER_CLASS =
-  'relative inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+  'relative inline-flex h-8 w-8 items-center justify-center rounded-control text-muted-foreground transition hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:active:scale-[var(--press-scale-icon)]';
 
 /** Relative "time ago" label from an ISO timestamp. */
 function timeAgo(iso: string): string {

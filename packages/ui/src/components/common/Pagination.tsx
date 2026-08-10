@@ -80,7 +80,7 @@ export function Pagination({
               onPageChange(item);
             }}
             className={cn(
-              'inline-flex h-8 min-w-8 items-center justify-center rounded-md px-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              'inline-flex h-8 min-w-8 items-center justify-center rounded-control px-2 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-safe:active:scale-[var(--press-scale-icon)]',
               item === page
                 ? 'bg-primary text-primary-foreground'
                 : 'text-foreground hover:bg-accent hover:text-accent-foreground',

@@ -15,9 +15,163 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: theme('fontFamily.sans');
+    /* Super Dreams sets a subtle negative tracking across the product. */
+    letter-spacing: -0.01em;
   }
 
   :focus-visible {
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+/*
+ * =====================================================================
+ * BCC → Super Dreams token mapping (Phase 1)
+ *
+ * These overrides retune the shared @superdreams/theme semantic tokens to the
+ * canonical Super Dreams palette for the BCC ADMIN app ONLY. They are scoped
+ * here (not in packages/theme) so the Member portal keeps its current palette
+ * until its own migration. Values derive from css/superdreams-base.css:
+ *   teal #00586a · teal-bright #0097B2 · teal2 #2a93a8 · ink #16272d
+ *   muted #647981 · warm canvas #f5f4f2 · line #dde1e5
+ *   ok #0f9b7e · warn #cf8a16 · bad #d85b48
+ * Declared after @tailwind so they win the cascade over the imported defaults.
+ * =====================================================================
+ */
+:root {
+  /* Warm neutral canvas; cards sit on pure white above it. */
+  --background: 40 20% 96%;
+  --foreground: 195 34% 13%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 195 34% 13%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 195 34% 13%;
+
+  /* Deep teal identity; CTAs layer a teal→bright-teal gradient in Phase 2. */
+  --primary: 190 100% 21%;
+  --primary-foreground: 0 0% 100%;
+
+  /* Warm neutral surfaces for secondary/muted fills. */
+  --secondary: 40 16% 93%;
+  --secondary-foreground: 195 34% 15%;
+
+  --muted: 40 16% 93%;
+  --muted-foreground: 196 13% 45%;
+
+  /* Teal tint for active/hover affordances (nav, menu items). */
+  --accent: 188 55% 92%;
+  --accent-foreground: 190 100% 21%;
+
+  --destructive: 8 65% 57%;
+  --destructive-foreground: 0 0% 100%;
+
+  --success: 167 74% 33%;
+  --success-foreground: 0 0% 100%;
+
+  --warning: 38 80% 45%;
+  --warning-foreground: 30 50% 14%;
+
+  --info: 190 60% 41%;
+  --info-foreground: 0 0% 100%;
+
+  /* Soft hairline borders — never dark. */
+  --border: 210 16% 88%;
+  --input: 208 16% 85%;
+  --ring: 189 100% 35%;
+
+  /* 16px base radius → premium soft rounding on cards/surfaces. */
+  --radius: 1rem;
+
+  /* --- Super Dreams component treatments (override shared defaults) --------- */
+  --primary-bright: 189 100% 35%; /* bright teal — CTA gradient end */
+  --radius-control: 9999px; /* pill CTAs, inputs, selects, icon buttons */
+  --radius-card: 1.375rem; /* 22px frosted cards */
+  --radius-surface: 1.375rem; /* 22px modals/drawers */
+  --radius-menu: 1rem; /* 16px dropdowns/popovers/tooltips */
+  --shadow-card: none; /* shadowless premium surfaces (hairline border only) */
+  --shadow-input: none;
+  --btn-primary-image: linear-gradient(110deg, hsl(var(--primary)), hsl(var(--primary-bright)));
+  --press-scale: 0.98; /* subtle press feedback */
+  --press-scale-icon: 0.9;
+  --overlay-blur: 3px; /* frosted modal/drawer backdrop */
+
+  /* Restrained teal-led accent set for charts/status. */
+  --chart-1: 189 100% 35%;
+  --chart-2: 167 74% 33%;
+  --chart-3: 38 80% 45%;
+  --chart-4: 8 65% 57%;
+  --chart-5: 190 60% 41%;
+  --chart-6: 205 24% 55%;
+}
+
+.dark {
+  /* Retuned teal dark theme — kept functional + accessible (light is primary). */
+  --background: 196 30% 8%;
+  --foreground: 180 18% 95%;
+
+  --card: 196 26% 11%;
+  --card-foreground: 180 18% 95%;
+
+  --popover: 196 26% 12%;
+  --popover-foreground: 180 18% 95%;
+
+  --primary: 188 78% 44%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 196 24% 16%;
+  --secondary-foreground: 180 18% 95%;
+
+  --muted: 196 24% 16%;
+  --muted-foreground: 195 12% 65%;
+
+  --accent: 190 50% 20%;
+  --accent-foreground: 188 70% 72%;
+
+  --destructive: 8 60% 52%;
+  --destructive-foreground: 0 0% 100%;
+
+  --success: 167 55% 42%;
+  --success-foreground: 0 0% 100%;
+
+  --warning: 38 78% 50%;
+  --warning-foreground: 30 50% 12%;
+
+  --info: 190 55% 50%;
+  --info-foreground: 196 40% 10%;
+
+  --border: 196 20% 20%;
+  --input: 196 20% 22%;
+  --ring: 189 85% 46%;
+
+  /* Brighter teal gradient end for CTAs on the dark canvas. */
+  --primary-bright: 189 90% 55%;
+
+  --chart-1: 189 85% 46%;
+  --chart-2: 167 55% 46%;
+  --chart-3: 38 78% 52%;
+  --chart-4: 8 62% 58%;
+  --chart-5: 190 55% 50%;
+  --chart-6: 205 24% 62%;
+}
+
+/*
+ * Global reduced-motion guard (Super Dreams brief: motion is deliberate and must
+ * respect user preference). Near-instant everything when the user asks for less
+ * motion, without removing final states.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  html {
+    scroll-behavior: auto;
   }
 }

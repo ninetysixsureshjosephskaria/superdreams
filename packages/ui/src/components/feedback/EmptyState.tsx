@@ -10,7 +10,7 @@ export interface EmptyStateProps {
 /** Presentational empty-state placeholder for lists and panels. */
 export function EmptyState({ title, description, icon, action }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-10 text-center">
+    <div className="flex flex-col items-center justify-center gap-3 rounded-card border border-dashed p-10 text-center">
       {icon ? (
         <div className="text-muted-foreground" aria-hidden="true">
           {icon}

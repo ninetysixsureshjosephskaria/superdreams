@@ -22,7 +22,7 @@ export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(function
     <label
       htmlFor={inputId}
       className={cn(
-        'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-input bg-background px-6 py-8 text-center transition-colors hover:bg-accent focus-within:ring-2 focus-within:ring-ring',
+        'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-card border border-dashed border-input bg-background px-6 py-8 text-center transition-colors hover:bg-accent focus-within:ring-2 focus-within:ring-ring',
         invalid && 'border-destructive',
         disabled && 'pointer-events-none opacity-50',
         className,

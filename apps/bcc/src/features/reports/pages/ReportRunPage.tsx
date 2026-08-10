@@ -151,7 +151,17 @@ export default function ReportRunPage() {
 
       {run.isError ? (
         <Alert variant="destructive" title="Could not run this report">
-          {run.error.message}
+          <div className="space-y-3">
+            <p>{run.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              isLoading={run.isPending}
+              onClick={() => run.mutate({ code, filters: buildFilters() })}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <ContentCard

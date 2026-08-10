@@ -6,9 +6,16 @@ export function WelcomeSection() {
   const firstName = (user?.name ?? 'there').split(' ')[0];
 
   return (
-    <div className="rounded-lg border bg-gradient-to-r from-primary/10 to-transparent p-6">
-      <h2 className="text-xl font-semibold tracking-tight">Welcome back, {firstName}</h2>
-      <p className="mt-1 text-sm text-muted-foreground">Here is a live snapshot of the platform.</p>
-    </div>
+    <section className="overflow-hidden rounded-card border bg-gradient-to-br from-primary/10 via-card to-card p-6 sm:p-7">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-primary/80">
+        Business Control Center
+      </p>
+      <h2 className="mt-1.5 text-2xl font-bold tracking-tight text-foreground sm:text-[1.6rem]">
+        Welcome back, {firstName}
+      </h2>
+      <p className="mt-1.5 text-sm font-medium text-muted-foreground">
+        Here is a live snapshot of the platform.
+      </p>
+    </section>
   );
 }

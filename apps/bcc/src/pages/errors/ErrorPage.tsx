@@ -26,7 +26,7 @@ export function ErrorPage({ code, title, description, icon }: ErrorPageProps) {
       <p className="max-w-md text-sm text-muted-foreground">{description}</p>
       <Link
         to={ROUTES.dashboard}
-        className="mt-2 inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        className="mt-2 inline-flex h-10 items-center justify-center rounded-control px-4 text-sm font-medium text-primary-foreground [background-image:var(--btn-primary-image)] transition duration-150 hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-safe:active:scale-[var(--press-scale)] active:brightness-90"
       >
         Back to dashboard
       </Link>

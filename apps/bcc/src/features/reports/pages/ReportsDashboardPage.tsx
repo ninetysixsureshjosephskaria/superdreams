@@ -32,7 +32,7 @@ export default function ReportsDashboardPage() {
       id: 'when',
       header: 'When',
       align: 'right',
-      cell: (a) => new Date(a.createdAt).toLocaleString(),
+      cell: (a) => <span className="tabular-nums">{new Date(a.createdAt).toLocaleString()}</span>,
     },
   ];
 
@@ -64,33 +64,58 @@ export default function ReportsDashboardPage() {
 
       {dashboard.isError ? (
         <Alert variant="destructive" title="Could not load the dashboard">
-          {dashboard.error.message}
+          <div className="space-y-3">
+            <p>{dashboard.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void dashboard.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <>
           <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
             <StatCard
               label="Members"
-              value={(kpis?.members.total ?? 0).toLocaleString()}
+              value={
+                <span className="tabular-nums">{(kpis?.members.total ?? 0).toLocaleString()}</span>
+              }
               hint={`${kpis?.members.active ?? 0} active`}
             />
             <StatCard
               label="Wallet balance"
-              value={formatMinor(kpis?.walletAvailableMinor ?? 0)}
+              value={
+                <span className="tabular-nums">{formatMinor(kpis?.walletAvailableMinor ?? 0)}</span>
+              }
               hint="Available across wallets"
             />
             <StatCard
               label="Reward points"
-              value={(kpis?.rewardPoints ?? 0).toLocaleString()}
+              value={
+                <span className="tabular-nums">{(kpis?.rewardPoints ?? 0).toLocaleString()}</span>
+              }
               hint="Outstanding balance"
             />
             <StatCard
               label="Active campaigns"
-              value={(kpis?.activeCampaigns ?? 0).toLocaleString()}
+              value={
+                <span className="tabular-nums">
+                  {(kpis?.activeCampaigns ?? 0).toLocaleString()}
+                </span>
+              }
             />
             <StatCard
               label="Notifications delivered"
-              value={(kpis?.notificationsDelivered ?? 0).toLocaleString()}
+              value={
+                <span className="tabular-nums">
+                  {(kpis?.notificationsDelivered ?? 0).toLocaleString()}
+                </span>
+              }
             />
           </div>
 

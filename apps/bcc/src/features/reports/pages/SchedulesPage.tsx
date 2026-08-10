@@ -8,6 +8,7 @@ import {
   Alert,
   Badge,
   Button,
+  ConfirmationDialog,
   ContentCard,
   DataTable,
   Input,
@@ -32,10 +33,23 @@ export default function SchedulesPage() {
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [frequency, setFrequency] = useState<ScheduleFrequency>('DAILY');
+  const [pendingDelete, setPendingDelete] = useState<ReportScheduleData | null>(null);
 
   const query = useReportSchedules({ page, pageSize: PAGE_SIZE });
   const create = useCreateSchedule();
   const remove = useDeleteSchedule();
+
+  function confirmDelete() {
+    if (!pendingDelete || remove.isPending) {
+      return;
+    }
+    remove.mutate(pendingDelete.id, {
+      onSuccess: () => notify({ variant: 'success', title: 'Schedule removed' }),
+      onError: (error) =>
+        notify({ variant: 'error', title: 'Could not remove', description: error.message }),
+      onSettled: () => setPendingDelete(null),
+    });
+  }
 
   const columns: DataTableColumn<ReportScheduleData>[] = [
     { id: 'name', header: 'Name', cell: (s) => s.name },
@@ -45,13 +59,21 @@ export default function SchedulesPage() {
     {
       id: 'active',
       header: 'Active',
-      cell: (s) => <Badge>{s.isActive ? 'Active' : 'Paused'}</Badge>,
+      cell: (s) => (
+        <Badge soft variant={s.isActive ? 'success' : 'secondary'}>
+          {s.isActive ? 'Active' : 'Paused'}
+        </Badge>
+      ),
     },
     {
       id: 'next',
       header: 'Next run',
       align: 'right',
-      cell: (s) => (s.nextRunAt ? new Date(s.nextRunAt).toLocaleString() : '—'),
+      cell: (s) => (
+        <span className="tabular-nums">
+          {s.nextRunAt ? new Date(s.nextRunAt).toLocaleString() : '—'}
+        </span>
+      ),
     },
   ];
 
@@ -123,7 +145,18 @@ export default function SchedulesPage() {
 
       {query.isError ? (
         <Alert variant="destructive" title="Could not load schedules">
-          {query.error.message}
+          <div className="space-y-3">
+            <p>{query.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void query.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <DataTable
@@ -132,21 +165,24 @@ export default function SchedulesPage() {
           getRowId={(s) => s.id}
           isLoading={query.isPending}
           rowActions={(s) => (
-            <Button
-              variant="ghost"
-              size="sm"
-              isLoading={remove.isPending}
-              onClick={() => {
-                remove.mutate(s.id, {
-                  onSuccess: () => notify({ variant: 'success', title: 'Schedule removed' }),
-                });
-              }}
-            >
+            <Button variant="ghost" size="sm" onClick={() => setPendingDelete(s)}>
               Delete
             </Button>
           )}
         />
       )}
+
+      <ConfirmationDialog
+        isOpen={pendingDelete !== null}
+        title={pendingDelete ? `Delete "${pendingDelete.name}"?` : ''}
+        description="This recurring report will stop running. This cannot be undone."
+        confirmLabel="Delete"
+        tone="destructive"
+        mobileSheet
+        isConfirming={remove.isPending}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </>
   );
 }

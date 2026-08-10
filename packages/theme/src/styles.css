@@ -55,6 +55,24 @@
   --chart-4: 152 60% 45%;
   --chart-5: 38 92% 50%;
   --chart-6: 8 88% 66%;
+
+  /*
+   * Component design tokens. Defaults here preserve the CURRENT component look;
+   * an app (e.g. BCC) may override them at its own :root to restyle the shared
+   * component layer without forking components. Consumed via the Tailwind preset
+   * (rounded-control/card/surface/menu, shadow-card/input) and component classes.
+   */
+  --primary-bright: var(--primary);
+  --radius-control: 0.75rem; /* buttons, icon buttons, inputs, selects */
+  --radius-card: 0.875rem; /* cards, surfaces, stat cards, alerts */
+  --radius-surface: 0.875rem; /* modals, drawers */
+  --radius-menu: 0.75rem; /* dropdowns, popovers, tooltips */
+  --shadow-card: 0 4px 12px rgb(15 23 42 / 0.05);
+  --shadow-input: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --btn-primary-image: linear-gradient(hsl(var(--primary)), hsl(var(--primary)));
+  --press-scale: 1; /* pressed-state scale for buttons/rows (1 = none) */
+  --press-scale-icon: 1;
+  --overlay-blur: 0px; /* modal/drawer backdrop blur */
 }
 
 .dark {

@@ -32,7 +32,9 @@ export function RecentActivity({ items }: { items: RecentActivityItem[] }) {
                     <span className="text-muted-foreground"> · {entry.module}</span>
                   ) : null}
                 </p>
-                <p className="text-xs text-muted-foreground">{timeAgo(entry.createdAt)}</p>
+                <p className="text-xs tabular-nums text-muted-foreground">
+                  {timeAgo(entry.createdAt)}
+                </p>
               </div>
             </li>
           ))}

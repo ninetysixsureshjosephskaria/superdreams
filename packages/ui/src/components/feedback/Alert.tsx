@@ -43,7 +43,7 @@ export function Alert({
     <div
       role="alert"
       className={cn(
-        'flex gap-3 rounded-lg border bg-card p-4 text-sm text-card-foreground',
+        'flex gap-3 rounded-card border bg-card p-4 text-sm text-card-foreground',
         meta.border,
         className,
       )}

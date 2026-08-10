@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { notificationsApi } from '@/features/notifications/api';
-import { ContentCard, EmptyState } from '@superdreams/ui';
+import { Button, ContentCard, EmptyState, Skeleton } from '@superdreams/ui';
 
 /** Compact notifications panel backed by the signed-in user's inbox. */
 export function NotificationsPanel() {
@@ -14,9 +14,27 @@ export function NotificationsPanel() {
   return (
     <ContentCard title="Notifications">
       {query.isPending ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <ul className="space-y-3" aria-hidden="true">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <li key={index} className="space-y-1.5">
+              <Skeleton className="h-3.5 w-40" />
+              <Skeleton className="h-3 w-full" />
+            </li>
+          ))}
+        </ul>
       ) : query.isError ? (
-        <p className="text-sm text-destructive">Couldn’t load notifications.</p>
+        <div role="alert" className="space-y-3 text-sm">
+          <p className="text-destructive">Couldn’t load notifications.</p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              void query.refetch();
+            }}
+          >
+            Try again
+          </Button>
+        </div>
       ) : items.length === 0 ? (
         <EmptyState title="All caught up" description="You have no new notifications." />
       ) : (

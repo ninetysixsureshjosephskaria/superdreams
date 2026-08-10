@@ -157,7 +157,12 @@ function CampaignDialog({
   }
 
   return (
-    <Modal isOpen onClose={onClose} title={isEdit ? `Edit ${editing.name}` : 'New bonus campaign'}>
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={isEdit ? `Edit ${editing.name}` : 'New bonus campaign'}
+      mobileSheet
+    >
       <div className="space-y-4">
         <div className="grid grid-cols-[2fr_1fr] gap-4">
           <FormField label="Name" required>
@@ -321,25 +326,43 @@ export default function BonusCampaignsPage() {
       id: 'scope',
       header: 'Eligibility',
       cell: (row) => (
-        <Badge variant="secondary">
+        <Badge soft variant="secondary">
           {row.scope === 'FIRST_DEPOSIT' ? 'First deposit' : 'All deposits'}
         </Badge>
       ),
     },
     { id: 'frequency', header: 'Mode', cell: (row) => row.frequency },
-    { id: 'rate', header: 'Rate', align: 'right', cell: (row) => bpsToPct(row.rateBps) },
+    {
+      id: 'rate',
+      header: 'Rate',
+      align: 'right',
+      cell: (row) => <span className="tabular-nums">{bpsToPct(row.rateBps)}</span>,
+    },
     {
       id: 'minUnits',
       header: 'Min units',
       align: 'right',
-      cell: (row) => row.minUnits.toLocaleString(),
+      cell: (row) => <span className="tabular-nums">{row.minUnits.toLocaleString()}</span>,
     },
-    { id: 'lockDays', header: 'Lock', align: 'right', cell: (row) => `${row.lockDays}d` },
-    { id: 'window', header: 'Window', cell: (row) => windowLabel(row) },
+    {
+      id: 'lockDays',
+      header: 'Lock',
+      align: 'right',
+      cell: (row) => <span className="tabular-nums">{`${row.lockDays}d`}</span>,
+    },
+    {
+      id: 'window',
+      header: 'Window',
+      cell: (row) => <span className="tabular-nums">{windowLabel(row)}</span>,
+    },
     {
       id: 'status',
       header: 'Status',
-      cell: (row) => <Badge variant={STATUS_VARIANT[row.status]}>{row.status}</Badge>,
+      cell: (row) => (
+        <Badge soft variant={STATUS_VARIANT[row.status]}>
+          {row.status}
+        </Badge>
+      ),
     },
   ];
 
@@ -356,7 +379,18 @@ export default function BonusCampaignsPage() {
 
       {query.isError ? (
         <Alert variant="destructive" title="Could not load campaigns">
-          {query.error.message}
+          <div className="space-y-3">
+            <p>{query.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void query.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <DataTable
@@ -391,6 +425,7 @@ export default function BonusCampaignsPage() {
         description="The campaign stops applying to new deposits. Bonuses already written to tranches are unaffected. This cannot be undone."
         confirmLabel="Delete"
         tone="destructive"
+        mobileSheet
         isConfirming={del.isPending}
         onConfirm={confirmDelete}
         onCancel={() => setPendingDelete(null)}

@@ -20,7 +20,7 @@ export function Surface({ elevation = 1, className, ...props }: SurfaceProps) {
   return (
     <div
       className={cn(
-        'rounded-lg border bg-card text-card-foreground',
+        'rounded-card border bg-card text-card-foreground',
         elevationClass[elevation],
         className,
       )}

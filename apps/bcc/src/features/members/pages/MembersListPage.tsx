@@ -81,7 +81,7 @@ export default function MembersListPage() {
       cell: (member) => (
         <div>
           <p className="font-medium">{member.fullName}</p>
-          <p className="text-xs text-muted-foreground">{member.memberNumber}</p>
+          <p className="text-xs tabular-nums text-muted-foreground">{member.memberNumber}</p>
         </div>
       ),
     },
@@ -97,7 +97,9 @@ export default function MembersListPage() {
       header: 'Joined',
       sortable: true,
       align: 'right',
-      cell: (member) => new Date(member.joinedAt).toLocaleDateString(),
+      cell: (member) => (
+        <span className="tabular-nums">{new Date(member.joinedAt).toLocaleDateString()}</span>
+      ),
     },
   ];
 
@@ -143,6 +145,7 @@ export default function MembersListPage() {
           }
           confirmLabel="Generate"
           cancelLabel="Cancel"
+          mobileSheet
           isConfirming={generateDemo.isPending}
           onCancel={() => setConfirmDemoOpen(false)}
           onConfirm={() => {
@@ -201,7 +204,18 @@ export default function MembersListPage() {
 
       {query.isError ? (
         <Alert variant="destructive" title="Could not load members">
-          {query.error.message}
+          <div className="space-y-3">
+            <p>{query.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void query.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <DataTable

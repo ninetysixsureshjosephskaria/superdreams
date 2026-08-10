@@ -23,10 +23,18 @@ function titleCase(value: string): string {
 
 /** Notification delivery status as a design-system badge. */
 export function NotificationStatusBadge({ status }: { status: NotificationStatus }) {
-  return <Badge variant={statusVariant[status]}>{titleCase(status)}</Badge>;
+  return (
+    <Badge soft variant={statusVariant[status]}>
+      {titleCase(status)}
+    </Badge>
+  );
 }
 
 /** Template status as a design-system badge. */
 export function TemplateStatusBadge({ status }: { status: TemplateStatus }) {
-  return <Badge variant={templateVariant[status]}>{titleCase(status)}</Badge>;
+  return (
+    <Badge soft variant={templateVariant[status]}>
+      {titleCase(status)}
+    </Badge>
+  );
 }

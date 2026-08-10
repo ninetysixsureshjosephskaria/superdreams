@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/page-header';
 import { useNotificationStore } from '@/store';
 import type { UpdateCampaignInput } from '@superdreams/api-client';
-import { Alert, LoadingScreen } from '@superdreams/ui';
+import { Alert, Button, LoadingScreen } from '@superdreams/ui';
 
 import { CampaignForm } from '../components/CampaignForm';
 import { useCampaign, useUpdateCampaign } from '../hooks';
@@ -39,7 +39,18 @@ export default function CampaignEditPage() {
   if (campaignQuery.isError || !campaignQuery.data) {
     return (
       <Alert variant="destructive" title="Could not load campaign">
-        {campaignQuery.error?.message ?? 'The campaign could not be found.'}
+        <div className="space-y-3">
+          <p>{campaignQuery.error?.message ?? 'The campaign could not be found.'}</p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              void campaignQuery.refetch();
+            }}
+          >
+            Try again
+          </Button>
+        </div>
       </Alert>
     );
   }

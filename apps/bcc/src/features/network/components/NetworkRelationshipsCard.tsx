@@ -1,13 +1,16 @@
+import type { ReactNode } from 'react';
+
+import { StatusPill } from '@/components/status-pill';
 import { usePermissions } from '@/hooks';
-import { Alert, ContentCard, EmptyState, Spinner } from '@superdreams/ui';
+import { Alert, Button, ContentCard, EmptyState, Spinner } from '@superdreams/ui';
 
 import { useNetworkMember } from '../hooks';
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, numeric }: { label: string; value: ReactNode; numeric?: boolean }) {
   return (
     <div>
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium">{value || '—'}</p>
+      <p className={`text-sm font-medium ${numeric ? 'tabular-nums' : ''}`}>{value || '—'}</p>
     </div>
   );
 }
@@ -35,16 +38,35 @@ export function NetworkRelationshipsCard({ memberId }: { memberId: string }) {
         <EmptyState title="Not in a network" description="This member has no network node yet." />
       ) : query.isError || !query.data ? (
         <Alert variant="destructive" title="Could not load network">
-          {query.error?.message ?? 'Network information is unavailable.'}
+          <div className="space-y-3">
+            <p>{query.error?.message ?? 'Network information is unavailable.'}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void query.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <div className="grid grid-cols-2 gap-4">
-          <Row label="Referred by" value={query.data.referredBy ?? ''} />
-          <Row label="Partner" value={query.data.partnerId ?? ''} />
-          <Row label="Direct referrals" value={query.data.directReferralCount.toLocaleString()} />
-          <Row label="Total downline" value={query.data.totalDownlineCount.toLocaleString()} />
-          <Row label="Units" value={query.data.units.toLocaleString()} />
-          <Row label="Network status" value={query.data.status} />
+          <Row label="Referred by" value={query.data.referredBy ?? ''} numeric />
+          <Row label="Partner" value={query.data.partnerId ?? ''} numeric />
+          <Row
+            label="Direct referrals"
+            value={query.data.directReferralCount.toLocaleString()}
+            numeric
+          />
+          <Row
+            label="Total downline"
+            value={query.data.totalDownlineCount.toLocaleString()}
+            numeric
+          />
+          <Row label="Units" value={query.data.units.toLocaleString()} numeric />
+          <Row label="Network status" value={<StatusPill status={query.data.status} />} />
         </div>
       )}
     </ContentCard>

@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 
 import { PageHeader } from '@/components/page-header';
+import { SectionHeading } from '@/components/section-heading';
 import { useNotificationStore } from '@/store';
 import type { SettingData } from '@superdreams/api-client';
 import { Alert, Button, ContentCard, Input, Select, Spinner, Switch } from '@superdreams/ui';
@@ -215,7 +216,18 @@ export default function SettingsDashboardPage() {
 
       {settings.isError ? (
         <Alert variant="destructive" title="Could not load settings">
-          {settings.error.message}
+          <div className="space-y-3">
+            <p>{settings.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void settings.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : settings.isPending ? (
         <div className="flex justify-center py-12">
@@ -239,7 +251,7 @@ export default function SettingsDashboardPage() {
       )}
 
       <section className="mt-8">
-        <h2 className="mb-3 text-lg font-semibold">Security</h2>
+        <SectionHeading title="Security" icon="shield" />
         <ChangePasswordCard />
       </section>
     </>

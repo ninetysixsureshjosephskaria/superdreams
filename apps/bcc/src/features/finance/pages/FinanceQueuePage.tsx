@@ -55,22 +55,38 @@ export default function FinanceQueuePage() {
 
   const columns: DataTableColumn<FinancialRequestData>[] = [
     { id: 'type', header: 'Type', cell: (row) => <TypeBadge type={row.type} /> },
-    { id: 'requestNumber', header: 'Request', cell: (row) => row.requestNumber },
+    {
+      id: 'requestNumber',
+      header: 'Request',
+      cell: (row) => <span className="tabular-nums">{row.requestNumber}</span>,
+    },
     {
       id: 'member',
       header: 'Member',
       cell: (row) => (
-        <span className="font-mono text-xs text-muted-foreground">{row.memberId}</span>
+        <span className="font-mono text-xs tabular-nums text-muted-foreground">{row.memberId}</span>
       ),
     },
-    { id: 'units', header: 'Units', align: 'right', cell: (row) => row.units.toLocaleString() },
-    { id: 'amount', header: 'Amount', align: 'right', cell: (row) => usd(row.amountCents) },
+    {
+      id: 'units',
+      header: 'Units',
+      align: 'right',
+      cell: (row) => <span className="tabular-nums">{row.units.toLocaleString()}</span>,
+    },
+    {
+      id: 'amount',
+      header: 'Amount',
+      align: 'right',
+      cell: (row) => <span className="font-medium tabular-nums">{usd(row.amountCents)}</span>,
+    },
     { id: 'status', header: 'Status', cell: (row) => <StatusBadge status={row.status} /> },
     {
       id: 'createdAt',
       header: 'Submitted',
       align: 'right',
-      cell: (row) => new Date(row.createdAt).toLocaleString(),
+      cell: (row) => (
+        <span className="tabular-nums">{new Date(row.createdAt).toLocaleString()}</span>
+      ),
     },
   ];
 
@@ -111,7 +127,18 @@ export default function FinanceQueuePage() {
 
       {query.isError ? (
         <Alert variant="destructive" title="Could not load the action queue">
-          {query.error.message}
+          <div className="space-y-3">
+            <p>{query.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void query.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <DataTable

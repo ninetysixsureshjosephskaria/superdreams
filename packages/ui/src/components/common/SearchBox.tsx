@@ -26,7 +26,7 @@ export const SearchBox = forwardRef<HTMLInputElement, SearchBoxProps>(function S
         type="search"
         placeholder={placeholder}
         className={cn(
-          'flex h-10 w-full rounded-md border border-input bg-background pl-9 pr-9 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 [&::-webkit-search-cancel-button]:hidden',
+          'flex h-10 w-full rounded-control border border-input bg-background pl-9 pr-9 text-sm shadow-input transition placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 [&::-webkit-search-cancel-button]:hidden',
           className,
         )}
         {...props}

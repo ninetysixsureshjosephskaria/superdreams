@@ -79,7 +79,11 @@ export default function OrdersPage() {
       header: 'Status',
       cell: (order) => {
         const meta = ORDER_STATUS_META[order.status];
-        return <Badge variant={meta.variant}>{meta.label}</Badge>;
+        return (
+          <Badge soft variant={meta.variant}>
+            {meta.label}
+          </Badge>
+        );
       },
     },
     {
@@ -125,7 +129,18 @@ export default function OrdersPage() {
 
       {ordersQuery.isError ? (
         <Alert variant="destructive" title="Could not load orders">
-          {ordersQuery.error.message}
+          <div className="space-y-3">
+            <p>{ordersQuery.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void ordersQuery.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <>

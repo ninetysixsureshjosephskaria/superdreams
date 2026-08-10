@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 
 import { PageHeader } from '@/components/page-header';
+import { StatusPill } from '@/components/status-pill';
 import { usePermissions } from '@/hooks';
 import { useNotificationStore } from '@/store';
 import type { CurrencyData } from '@superdreams/api-client';
@@ -96,6 +97,7 @@ function CurrencyFormDialog({
       isOpen={isOpen}
       onClose={onClose}
       title={isEdit ? `Edit ${editing.code}` : 'Add currency'}
+      mobileSheet
     >
       <div className="space-y-4">
         {!isEdit ? (
@@ -209,9 +211,13 @@ export default function CurrenciesPage() {
       id: 'code',
       header: 'Code',
       cell: (row) => (
-        <span className="flex items-center gap-2 font-medium">
+        <span className="flex items-center gap-2 font-medium tabular-nums">
           {row.code}
-          {row.isBase ? <Badge variant="secondary">Base</Badge> : null}
+          {row.isBase ? (
+            <Badge soft variant="secondary">
+              Base
+            </Badge>
+          ) : null}
         </span>
       ),
     },
@@ -220,22 +226,18 @@ export default function CurrenciesPage() {
       id: 'perUnit',
       header: 'Per unit',
       align: 'right',
-      cell: (row) => row.perUnitValue.toLocaleString(),
+      cell: (row) => <span className="tabular-nums">{row.perUnitValue.toLocaleString()}</span>,
     },
     {
       id: 'perUsd',
       header: '1 USD =',
       align: 'right',
-      cell: (row) => row.perUsd.toLocaleString(),
+      cell: (row) => <span className="tabular-nums">{row.perUsd.toLocaleString()}</span>,
     },
     {
       id: 'active',
       header: 'Status',
-      cell: (row) => (
-        <Badge variant={row.isActive ? 'success' : 'secondary'}>
-          {row.isActive ? 'Active' : 'Inactive'}
-        </Badge>
-      ),
+      cell: (row) => <StatusPill status={row.isActive ? 'active' : 'inactive'} />,
     },
   ];
 
@@ -252,7 +254,18 @@ export default function CurrenciesPage() {
 
       {query.isError ? (
         <Alert variant="destructive" title="Could not load currencies">
-          {query.error.message}
+          <div className="space-y-3">
+            <p>{query.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void query.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <DataTable
@@ -292,6 +305,7 @@ export default function CurrenciesPage() {
         description="Members can no longer lock to this currency. This cannot be undone."
         confirmLabel="Delete"
         tone="destructive"
+        mobileSheet
         isConfirming={del.isPending}
         onConfirm={confirmDelete}
         onCancel={() => setPendingDelete(null)}

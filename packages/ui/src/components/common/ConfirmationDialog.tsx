@@ -11,6 +11,8 @@ export interface ConfirmationDialogProps {
   isConfirming?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  /** Render as a bottom sheet on small screens (see Modal). */
+  mobileSheet?: boolean;
 }
 
 /**
@@ -27,6 +29,7 @@ export function ConfirmationDialog({
   isConfirming = false,
   onConfirm,
   onCancel,
+  mobileSheet = false,
 }: ConfirmationDialogProps) {
   return (
     <Modal
@@ -34,6 +37,7 @@ export function ConfirmationDialog({
       onClose={onCancel}
       title={title}
       description={description}
+      mobileSheet={mobileSheet}
       footer={
         <>
           <Button variant="ghost" onClick={onCancel} disabled={isConfirming}>

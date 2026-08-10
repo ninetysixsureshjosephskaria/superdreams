@@ -23,10 +23,18 @@ function titleCase(value: string): string {
 
 /** Campaign status as a design-system badge. */
 export function CampaignStatusBadge({ status }: { status: CampaignStatus }) {
-  return <Badge variant={statusVariant[status]}>{titleCase(status)}</Badge>;
+  return (
+    <Badge soft variant={statusVariant[status]}>
+      {titleCase(status)}
+    </Badge>
+  );
 }
 
 /** Member participation status as a design-system badge. */
 export function ParticipationBadge({ status }: { status: CampaignMemberStatus }) {
-  return <Badge variant={participationVariant[status]}>{titleCase(status)}</Badge>;
+  return (
+    <Badge soft variant={participationVariant[status]}>
+      {titleCase(status)}
+    </Badge>
+  );
 }

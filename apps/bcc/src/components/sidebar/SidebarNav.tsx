@@ -1,16 +1,16 @@
 import { APP_NAME } from '@/constants';
-import { useNavItems } from '@/navigation';
+import { useNavSections } from '@/navigation';
 import { useNavigationStore } from '@/store';
 import { Icon, IconButton } from '@superdreams/ui';
 import { cn } from '@superdreams/utils';
 
 import { NavList } from './NavList';
 
-/** Desktop sidebar: collapsible, config-driven, with active highlighting. */
+/** Desktop sidebar: collapsible, grouped (Super Dreams IA), with active highlighting. */
 export function SidebarNav() {
   const collapsed = useNavigationStore((state) => state.isSidebarCollapsed);
   const toggle = useNavigationStore((state) => state.toggleSidebarCollapsed);
-  const items = useNavItems();
+  const sections = useNavSections();
 
   return (
     <aside
@@ -28,14 +28,27 @@ export function SidebarNav() {
       >
         <span
           aria-hidden="true"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground"
         >
           SD
         </span>
-        {collapsed ? null : <span className="truncate font-semibold">{APP_NAME}</span>}
+        {collapsed ? null : (
+          <span className="truncate font-semibold tracking-tight">{APP_NAME}</span>
+        )}
       </div>
-      <nav aria-label="Main navigation" className="flex-1 overflow-y-auto p-2">
-        <NavList items={items} collapsed={collapsed} />
+      <nav aria-label="Main navigation" className="flex-1 space-y-4 overflow-y-auto p-3">
+        {sections.map((section) => (
+          <div key={section.key} className="space-y-1">
+            {collapsed ? (
+              <div aria-hidden="true" className="mx-2 my-1 h-px bg-border first:hidden" />
+            ) : (
+              <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/80">
+                {section.label}
+              </p>
+            )}
+            <NavList items={section.items} collapsed={collapsed} />
+          </div>
+        ))}
       </nav>
       <div className="border-t p-2">
         <IconButton

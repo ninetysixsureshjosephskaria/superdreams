@@ -3,7 +3,17 @@ import { Helmet } from 'react-helmet-async';
 
 import { PageHeader } from '@/components/page-header';
 import { useNotificationStore } from '@/store';
-import { Alert, Badge, ContentCard, Input, Spinner, Switch, Textarea } from '@superdreams/ui';
+import {
+  Alert,
+  Badge,
+  Button,
+  ConfirmationDialog,
+  ContentCard,
+  Input,
+  Spinner,
+  Switch,
+  Textarea,
+} from '@superdreams/ui';
 
 import { useMaintenance, useSetMaintenance } from '../hooks';
 
@@ -15,6 +25,7 @@ export default function MaintenancePage() {
 
   const [title, setTitle] = useState('Scheduled maintenance');
   const [message, setMessage] = useState('The platform is undergoing maintenance.');
+  const [confirmEnable, setConfirmEnable] = useState(false);
 
   const active = status.data?.active ?? false;
 
@@ -25,6 +36,18 @@ export default function MaintenancePage() {
       setMessage(status.data.window.message);
     }
   }, [status.data?.window]);
+
+  function applyMaintenance(enabled: boolean) {
+    setMaintenance.mutate(enabled ? { enabled: true, title, message } : { enabled: false }, {
+      onSuccess: () =>
+        notify({
+          variant: 'success',
+          title: enabled ? 'Maintenance enabled' : 'Maintenance disabled',
+        }),
+      onError: (error) => notify({ variant: 'error', title: 'Failed', description: error.message }),
+      onSettled: () => setConfirmEnable(false),
+    });
+  }
 
   return (
     <>
@@ -38,7 +61,18 @@ export default function MaintenancePage() {
 
       {status.isError ? (
         <Alert variant="destructive" title="Could not load maintenance status">
-          {status.error.message}
+          <div className="space-y-3">
+            <p>{status.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void status.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : status.isPending ? (
         <div className="flex justify-center py-12">
@@ -50,7 +84,9 @@ export default function MaintenancePage() {
           description={active ? 'Maintenance mode is currently ON.' : 'Maintenance mode is OFF.'}
         >
           <div className="mb-4 flex items-center gap-3">
-            <Badge>{active ? 'Active' : 'Inactive'}</Badge>
+            <Badge soft variant={active ? 'warning' : 'secondary'}>
+              {active ? 'Active' : 'Inactive'}
+            </Badge>
           </div>
 
           <div className="space-y-4">
@@ -78,7 +114,7 @@ export default function MaintenancePage() {
               />
             </div>
 
-            <div className="flex items-center justify-between rounded-md border p-4">
+            <div className="flex items-center justify-between rounded-surface border p-4">
               <div>
                 <p className="text-sm font-medium">Maintenance mode</p>
                 <p className="text-xs text-muted-foreground">
@@ -89,24 +125,31 @@ export default function MaintenancePage() {
                 checked={active}
                 disabled={setMaintenance.isPending}
                 onCheckedChange={(enabled) => {
-                  setMaintenance.mutate(
-                    enabled ? { enabled: true, title, message } : { enabled: false },
-                    {
-                      onSuccess: () =>
-                        notify({
-                          variant: 'success',
-                          title: enabled ? 'Maintenance enabled' : 'Maintenance disabled',
-                        }),
-                      onError: (error) =>
-                        notify({ variant: 'error', title: 'Failed', description: error.message }),
-                    },
-                  );
+                  // Enabling takes the whole platform offline — confirm first.
+                  // Disabling restores service and is applied immediately.
+                  if (enabled) {
+                    setConfirmEnable(true);
+                  } else {
+                    applyMaintenance(false);
+                  }
                 }}
               />
             </div>
           </div>
         </ContentCard>
       )}
+
+      <ConfirmationDialog
+        isOpen={confirmEnable}
+        title="Take the platform offline?"
+        description="Enabling maintenance mode immediately blocks members from signing in and using the platform until you turn it back off. Admins keep access."
+        confirmLabel="Enable maintenance"
+        tone="destructive"
+        mobileSheet
+        isConfirming={setMaintenance.isPending}
+        onConfirm={() => applyMaintenance(true)}
+        onCancel={() => setConfirmEnable(false)}
+      />
     </>
   );
 }

@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/page-header';
 import { useNotificationStore } from '@/store';
 import type { UpdateRewardProgramInput } from '@superdreams/api-client';
-import { Alert, LoadingScreen } from '@superdreams/ui';
+import { Alert, Button, LoadingScreen } from '@superdreams/ui';
 
 import { ProgramForm } from '../components/ProgramForm';
 import { useProgram, useUpdateProgram } from '../hooks';
@@ -32,7 +32,18 @@ export default function ProgramEditPage() {
   if (programQuery.isError || !programQuery.data) {
     return (
       <Alert variant="destructive" title="Could not load program">
-        {programQuery.error?.message ?? 'The program could not be found.'}
+        <div className="space-y-3">
+          <p>{programQuery.error?.message ?? 'The program could not be found.'}</p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              void programQuery.refetch();
+            }}
+          >
+            Try again
+          </Button>
+        </div>
       </Alert>
     );
   }

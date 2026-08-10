@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 
 import { PageHeader } from '@/components/page-header';
 import type { SettingHistoryData } from '@superdreams/api-client';
-import { Alert, DataTable, Input, Pagination, type DataTableColumn } from '@superdreams/ui';
+import { Alert, Button, DataTable, Input, Pagination, type DataTableColumn } from '@superdreams/ui';
 
 import { useSettingsHistory } from '../hooks';
 
@@ -27,12 +27,17 @@ export default function SettingsHistoryPage() {
     { id: 'category', header: 'Category', cell: (h) => h.categoryCode },
     { id: 'old', header: 'Old value', cell: (h) => renderValue(h.oldValue) },
     { id: 'new', header: 'New value', cell: (h) => renderValue(h.newValue) },
-    { id: 'version', header: 'Version', align: 'right', cell: (h) => h.version },
+    {
+      id: 'version',
+      header: 'Version',
+      align: 'right',
+      cell: (h) => <span className="tabular-nums">{h.version}</span>,
+    },
     {
       id: 'when',
       header: 'When',
       align: 'right',
-      cell: (h) => new Date(h.createdAt).toLocaleString(),
+      cell: (h) => <span className="tabular-nums">{new Date(h.createdAt).toLocaleString()}</span>,
     },
   ];
 
@@ -56,7 +61,18 @@ export default function SettingsHistoryPage() {
 
       {query.isError ? (
         <Alert variant="destructive" title="Could not load history">
-          {query.error.message}
+          <div className="space-y-3">
+            <p>{query.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void query.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <DataTable
@@ -69,7 +85,9 @@ export default function SettingsHistoryPage() {
 
       {query.data ? (
         <div className="mt-4 flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">{query.data.total} changes</p>
+          <p className="text-sm text-muted-foreground">
+            <span className="tabular-nums">{query.data.total}</span> changes
+          </p>
           <Pagination
             page={query.data.page}
             pageCount={query.data.totalPages}

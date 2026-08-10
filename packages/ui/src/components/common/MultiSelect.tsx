@@ -85,7 +85,7 @@ export function MultiSelect({
           setOpen((current) => !current);
         }}
         className={cn(
-          'flex h-10 w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 text-left text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
+          'flex h-10 w-full items-center justify-between gap-2 rounded-control border border-input bg-background px-3 text-left text-sm shadow-input transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
           invalid && 'border-destructive focus-visible:ring-destructive',
         )}
       >
@@ -99,7 +99,7 @@ export function MultiSelect({
           role="listbox"
           aria-multiselectable="true"
           aria-labelledby={baseId}
-          className="absolute z-popover mt-1 max-h-60 w-full overflow-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-overlay"
+          className="absolute z-popover mt-1 max-h-60 w-full overflow-auto rounded-menu border bg-popover p-1 text-popover-foreground shadow-overlay"
         >
           {options.map((option) => {
             const checked = value.includes(option.value);

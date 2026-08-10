@@ -157,7 +157,18 @@ export default function RewardProgramsListPage() {
 
       {query.isError ? (
         <Alert variant="destructive" title="Could not load programs">
-          {query.error.message}
+          <div className="space-y-3">
+            <p>{query.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void query.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <DataTable

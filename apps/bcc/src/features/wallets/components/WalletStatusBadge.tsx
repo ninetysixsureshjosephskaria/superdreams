@@ -14,5 +14,9 @@ function label(status: WalletStatus): string {
 
 /** Renders a wallet status as a design-system badge. */
 export function WalletStatusBadge({ status }: { status: WalletStatus }) {
-  return <Badge variant={variantByStatus[status]}>{label(status)}</Badge>;
+  return (
+    <Badge soft variant={variantByStatus[status]}>
+      {label(status)}
+    </Badge>
+  );
 }

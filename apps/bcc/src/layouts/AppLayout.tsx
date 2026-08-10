@@ -26,9 +26,13 @@ export function AppLayout() {
             tabIndex={-1}
             className="flex-1 p-4 focus-visible:outline-none sm:p-6"
           >
-            <Suspense fallback={<PageLoader />}>
-              <Outlet />
-            </Suspense>
+            {/* Centered admin workspace: comfortable max-width on ultrawide while
+                wide data tables can still scroll within their own container. */}
+            <div className="mx-auto w-full max-w-[1440px]">
+              <Suspense fallback={<PageLoader />}>
+                <Outlet />
+              </Suspense>
+            </div>
           </main>
           <AppFooter />
         </div>

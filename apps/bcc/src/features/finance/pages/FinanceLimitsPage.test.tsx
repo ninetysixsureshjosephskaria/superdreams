@@ -57,6 +57,8 @@ describe('FinanceLimitsPage', () => {
     await screen.findByLabelText('Minimum deposit (units)');
 
     fireEvent.click(screen.getByRole('button', { name: 'Save limits' }));
+    // Confirm the impactful, platform-wide change in the dialog.
+    fireEvent.click(await screen.findByRole('button', { name: 'Apply limits' }));
 
     await waitFor(() => expect(financeApi.updateLimits).toHaveBeenCalledTimes(1));
     expect(financeApi.updateLimits).toHaveBeenCalledWith({
@@ -96,6 +98,7 @@ describe('FinanceLimitsPage', () => {
     renderPage();
     await screen.findByLabelText('Minimum deposit (units)');
     fireEvent.click(screen.getByRole('button', { name: 'Save limits' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Apply limits' }));
     expect(await screen.findByText('Server error')).toBeInTheDocument();
   });
 });

@@ -8,6 +8,7 @@ import type { NotificationData, NotificationStatus } from '@superdreams/api-clie
 import {
   Alert,
   Button,
+  ConfirmationDialog,
   ContentCard,
   DataTable,
   Icon,
@@ -39,8 +40,8 @@ const STATUS_OPTIONS = [
 
 function QueueStat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-md border p-3 text-center">
-      <p className="text-2xl font-semibold">{value.toLocaleString()}</p>
+    <div className="rounded-surface border p-3 text-center">
+      <p className="text-2xl font-semibold tabular-nums">{value.toLocaleString()}</p>
       <p className="text-xs text-muted-foreground">{label}</p>
     </div>
   );
@@ -52,9 +53,27 @@ export default function NotificationsDashboardPage() {
   const notify = useNotificationStore((state) => state.notify);
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState('');
+  const [confirmProcess, setConfirmProcess] = useState(false);
 
   const queue = useQueueOverview();
   const process = useProcessQueue();
+
+  function runProcessQueue() {
+    if (process.isPending) {
+      return;
+    }
+    process.mutate(undefined, {
+      onSuccess: (result) =>
+        notify({
+          variant: 'success',
+          title: 'Queue processed',
+          description: `${result.sent} sent, ${result.failed} failed, ${result.dead} dead-lettered.`,
+        }),
+      onError: (error) =>
+        notify({ variant: 'error', title: 'Could not process queue', description: error.message }),
+      onSettled: () => setConfirmProcess(false),
+    });
+  }
   const retry = useRetryNotification();
   const cancel = useCancelNotification();
   const query = useNotifications({
@@ -86,7 +105,7 @@ export default function NotificationsDashboardPage() {
       id: 'date',
       header: 'Created',
       align: 'right',
-      cell: (n) => new Date(n.createdAt).toLocaleString(),
+      cell: (n) => <span className="tabular-nums">{new Date(n.createdAt).toLocaleString()}</span>,
     },
   ];
 
@@ -106,16 +125,7 @@ export default function NotificationsDashboardPage() {
             <Button
               variant="outline"
               isLoading={process.isPending}
-              onClick={() => {
-                process.mutate(undefined, {
-                  onSuccess: (result) =>
-                    notify({
-                      variant: 'success',
-                      title: 'Queue processed',
-                      description: `${result.sent} sent, ${result.failed} failed, ${result.dead} dead-lettered.`,
-                    }),
-                });
-              }}
+              onClick={() => setConfirmProcess(true)}
             >
               Process queue
             </Button>
@@ -154,7 +164,18 @@ export default function NotificationsDashboardPage() {
 
       {query.isError ? (
         <Alert variant="destructive" title="Could not load notifications">
-          {query.error.message}
+          <div className="space-y-3">
+            <p>{query.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void query.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <DataTable
@@ -196,7 +217,9 @@ export default function NotificationsDashboardPage() {
 
       {query.data ? (
         <div className="mt-4 flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">{query.data.total} notifications</p>
+          <p className="text-sm text-muted-foreground">
+            <span className="tabular-nums">{query.data.total}</span> notifications
+          </p>
           <Pagination
             page={query.data.page}
             pageCount={query.data.totalPages}
@@ -204,6 +227,17 @@ export default function NotificationsDashboardPage() {
           />
         </div>
       ) : null}
+
+      <ConfirmationDialog
+        isOpen={confirmProcess}
+        title="Process the notification queue?"
+        description="This immediately attempts delivery of every pending notification. Sends that fail are retried or dead-lettered per policy. This cannot be paused once started."
+        confirmLabel="Process queue"
+        mobileSheet
+        isConfirming={process.isPending}
+        onConfirm={runProcessQueue}
+        onCancel={() => setConfirmProcess(false)}
+      />
     </>
   );
 }

@@ -221,12 +221,16 @@ function ReferralRateCard({ config }: { config: CommissionConfigView }) {
 
 function tierColumns(): DataTableColumn<CommissionTierData>[] {
   return [
-    { id: 'range', header: 'Network units', cell: (row) => tierRangeLabel(row) },
+    {
+      id: 'range',
+      header: 'Network units',
+      cell: (row) => <span className="tabular-nums">{tierRangeLabel(row)}</span>,
+    },
     {
       id: 'rate',
       header: 'Commission rate',
       align: 'right',
-      cell: (row) => `${bpsToPct(row.rateBps)}%`,
+      cell: (row) => <span className="tabular-nums">{`${bpsToPct(row.rateBps)}%`}</span>,
     },
   ];
 }
@@ -262,7 +266,7 @@ function DefaultTiersDialog({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Edit default commission tiers">
+    <Modal isOpen={isOpen} onClose={onClose} title="Edit default commission tiers" mobileSheet>
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
           Rates are matched against a partner&apos;s total network units. Replacing the table
@@ -365,7 +369,7 @@ function CreateTargetDialog({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="New commission target">
+    <Modal isOpen={isOpen} onClose={onClose} title="New commission target" mobileSheet>
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <FormField label="Start date" required>
@@ -436,13 +440,24 @@ function TargetsCard({ config }: { config: CommissionConfigView }) {
   }
 
   const columns: DataTableColumn<CommissionTargetData>[] = [
-    { id: 'start', header: 'Start', cell: (row) => row.startDate },
-    { id: 'end', header: 'End', cell: (row) => row.endDate },
+    {
+      id: 'start',
+      header: 'Start',
+      cell: (row) => <span className="tabular-nums">{row.startDate}</span>,
+    },
+    {
+      id: 'end',
+      header: 'End',
+      cell: (row) => <span className="tabular-nums">{row.endDate}</span>,
+    },
     {
       id: 'tiers',
       header: 'Tiers',
-      cell: (row) =>
-        row.tiers.map((t) => `${tierRangeLabel(t)} → ${bpsToPct(t.rateBps)}%`).join(', '),
+      cell: (row) => (
+        <span className="tabular-nums">
+          {row.tiers.map((t) => `${tierRangeLabel(t)} → ${bpsToPct(t.rateBps)}%`).join(', ')}
+        </span>
+      ),
     },
   ];
 
@@ -486,6 +501,7 @@ function TargetsCard({ config }: { config: CommissionConfigView }) {
         description="The default tiers will apply again for these dates. This cannot be undone."
         confirmLabel="Delete"
         tone="destructive"
+        mobileSheet
         isConfirming={del.isPending}
         onConfirm={confirmDelete}
         onCancel={() => setPendingDelete(null)}
@@ -513,7 +529,18 @@ export default function CommissionPage() {
         <LoadingScreen message="Loading commission config…" />
       ) : query.isError || !query.data ? (
         <Alert variant="destructive" title="Could not load commission config">
-          {query.error?.message ?? 'Commission config is unavailable.'}
+          <div className="space-y-3">
+            <p>{query.error?.message ?? 'Commission config is unavailable.'}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void query.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <div className="space-y-6">

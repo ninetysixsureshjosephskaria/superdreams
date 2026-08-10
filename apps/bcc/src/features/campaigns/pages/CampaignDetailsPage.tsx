@@ -251,7 +251,18 @@ function EnrollmentsPanel({ campaignId }: { campaignId: string }) {
       </div>
       {query.isError ? (
         <Alert variant="destructive" title="Could not load enrollments">
-          {query.error.message}
+          <div className="space-y-3">
+            <p>{query.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void query.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <DataTable
@@ -317,7 +328,18 @@ export default function CampaignDetailsPage() {
   if (campaignQuery.isError || !campaignQuery.data) {
     return (
       <Alert variant="destructive" title="Could not load campaign">
-        {campaignQuery.error?.message ?? 'The campaign could not be found.'}
+        <div className="space-y-3">
+          <p>{campaignQuery.error?.message ?? 'The campaign could not be found.'}</p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              void campaignQuery.refetch();
+            }}
+          >
+            Try again
+          </Button>
+        </div>
       </Alert>
     );
   }
@@ -380,7 +402,7 @@ export default function CampaignDetailsPage() {
             </Button>
             <DropdownMenu
               align="end"
-              triggerClassName="inline-flex h-10 w-10 items-center justify-center rounded-md border border-input hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              triggerClassName="inline-flex h-10 w-10 items-center justify-center rounded-control border border-input transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:active:scale-[var(--press-scale-icon)]"
               trigger={
                 <>
                   <Icon name="more-horizontal" size="sm" />

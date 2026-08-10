@@ -19,7 +19,7 @@ export function ErrorState({
   return (
     <div
       role="alert"
-      className="flex flex-col items-center justify-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-10 text-center"
+      className="flex flex-col items-center justify-center gap-3 rounded-card border border-destructive/30 bg-destructive/5 p-10 text-center"
     >
       <h3 className="text-base font-semibold text-destructive">{title}</h3>
       <p className="max-w-sm text-sm text-muted-foreground">{description}</p>

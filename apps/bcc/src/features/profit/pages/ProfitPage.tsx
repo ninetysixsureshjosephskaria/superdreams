@@ -278,7 +278,7 @@ function OverviewCard({
         <div className="flex flex-col">
           <dt className="text-muted-foreground">Status</dt>
           <dd>
-            <Badge variant={schedule.status === 'PUBLISHED' ? 'success' : 'secondary'}>
+            <Badge soft variant={schedule.status === 'PUBLISHED' ? 'success' : 'secondary'}>
               {schedule.status}
             </Badge>
           </dd>
@@ -338,7 +338,15 @@ function DailyTable({
       id: 'off',
       header: 'Status',
       cell: (row) =>
-        row.off ? <Badge variant="secondary">Off</Badge> : <Badge variant="success">On</Badge>,
+        row.off ? (
+          <Badge soft variant="secondary">
+            Off
+          </Badge>
+        ) : (
+          <Badge soft variant="success">
+            On
+          </Badge>
+        ),
     },
   ];
 
@@ -393,7 +401,11 @@ function DayCellContent({
       <div className="flex items-start justify-between">
         <span className="text-sm font-semibold">{cell.dayNum}</span>
         {data ? (
-          <Badge variant={status === 'PUBLISHED' ? 'success' : 'secondary'} className="text-[10px]">
+          <Badge
+            soft
+            variant={status === 'PUBLISHED' ? 'success' : 'secondary'}
+            className="text-[10px]"
+          >
             {status === 'PUBLISHED' ? 'Published' : 'Draft'}
           </Badge>
         ) : null}
@@ -401,7 +413,7 @@ function DayCellContent({
       {data ? (
         <div className="space-y-0.5 text-xs text-muted-foreground">
           {data.off ? (
-            <Badge variant="secondary" className="text-[10px]">
+            <Badge soft variant="secondary" className="text-[10px]">
               Off
             </Badge>
           ) : (
@@ -412,7 +424,7 @@ function DayCellContent({
           )}
           {data.distributeAt ? <div className="tabular-nums">{data.distributeAt}</div> : null}
           {distributed ? (
-            <Badge variant="info" className="text-[10px]">
+            <Badge soft variant="info" className="text-[10px]">
               Distributed
             </Badge>
           ) : null}
@@ -537,7 +549,18 @@ function HistoryCard({ month }: { month: string }) {
     <ContentCard title="Distribution history" description={`Credited distributions in ${month}`}>
       {history.isError ? (
         <Alert variant="destructive" title="Could not load history">
-          {history.error.message}
+          <div className="space-y-3">
+            <p>{history.error.message}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void history.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <DataTable
@@ -701,7 +724,18 @@ export default function ProfitPage() {
         </ContentCard>
       ) : query.isError || !query.data ? (
         <Alert variant="destructive" title="Could not load schedule">
-          {query.error?.message ?? 'The schedule is unavailable.'}
+          <div className="space-y-3">
+            <p>{query.error?.message ?? 'The schedule is unavailable.'}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void query.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <div className="space-y-6">
@@ -761,6 +795,7 @@ export default function ProfitPage() {
         title={`Publish the ${month} schedule?`}
         description="Once published the daily rates are locked and can no longer be edited. Distribution uses these published rates."
         confirmLabel="Publish"
+        mobileSheet
         isConfirming={publish.isPending}
         onConfirm={doPublish}
         onCancel={() => setConfirmPublish(false)}
@@ -772,6 +807,7 @@ export default function ProfitPage() {
         description="This credits real profit to every eligible member's financial wallet using the backend's published rates. It moves money and cannot be undone. Re-running only credits members not yet paid."
         confirmLabel="Distribute now"
         tone="destructive"
+        mobileSheet
         isConfirming={distribute.isPending}
         onConfirm={doDistribute}
         onCancel={() => setPendingDistribute(null)}

@@ -8,6 +8,7 @@ import type { FinancialLimitsData, UpdateFinancialLimitsInput } from '@superdrea
 import {
   Alert,
   Button,
+  ConfirmationDialog,
   ContentCard,
   FormField,
   Input,
@@ -30,6 +31,7 @@ function LimitsForm({ initial }: { initial: FinancialLimitsData }) {
   const [feePct, setFeePct] = useState((initial.earlyWithdrawFeeBps / 100).toString());
   const [procMin, setProcMin] = useState(String(initial.processingMinDays));
   const [procMax, setProcMax] = useState(String(initial.processingMaxDays));
+  const [confirming, setConfirming] = useState(false);
 
   const minDepN = Number(minDeposit);
   const maxDepN = Number(maxDeposit);
@@ -58,18 +60,29 @@ function LimitsForm({ initial }: { initial: FinancialLimitsData }) {
       processingMaxDays: Math.round(Number(procMax)),
     };
     update.mutate(input, {
-      onSuccess: () => notify({ variant: 'success', title: 'Limits updated' }),
-      onError: (err) =>
-        notify({ variant: 'error', title: 'Could not update limits', description: err.message }),
+      onSuccess: () => {
+        notify({ variant: 'success', title: 'Limits updated' });
+        setConfirming(false);
+      },
+      onError: (err) => {
+        notify({ variant: 'error', title: 'Could not update limits', description: err.message });
+        setConfirming(false);
+      },
     });
   }
 
+  const numericInput = 'tabular-nums';
+
   return (
-    <ContentCard title="Deposit & withdrawal policy">
+    <ContentCard
+      title="Deposit & withdrawal policy"
+      description="System-wide rules enforced on every member deposit, withdrawal and tranche unlock."
+    >
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="Minimum deposit (units)" required>
           <Input
             aria-label="Minimum deposit (units)"
+            className={numericInput}
             type="number"
             min={1}
             value={minDeposit}
@@ -78,6 +91,7 @@ function LimitsForm({ initial }: { initial: FinancialLimitsData }) {
         </FormField>
         <FormField label="Maximum deposit (units)" required>
           <Input
+            className={numericInput}
             type="number"
             min={1}
             value={maxDeposit}
@@ -86,6 +100,7 @@ function LimitsForm({ initial }: { initial: FinancialLimitsData }) {
         </FormField>
         <FormField label="Minimum withdrawal (USD)" required>
           <Input
+            className={numericInput}
             type="number"
             min={0}
             step="0.01"
@@ -100,6 +115,7 @@ function LimitsForm({ initial }: { initial: FinancialLimitsData }) {
         >
           <Input
             aria-label="Early-unlock fee (%)"
+            className={numericInput}
             type="number"
             min={0}
             max={100}
@@ -110,6 +126,7 @@ function LimitsForm({ initial }: { initial: FinancialLimitsData }) {
         </FormField>
         <FormField label="Processing time — min (days)">
           <Input
+            className={numericInput}
             type="number"
             min={0}
             value={procMin}
@@ -118,6 +135,7 @@ function LimitsForm({ initial }: { initial: FinancialLimitsData }) {
         </FormField>
         <FormField label="Processing time — max (days)">
           <Input
+            className={numericInput}
             type="number"
             min={0}
             value={procMax}
@@ -147,11 +165,7 @@ function LimitsForm({ initial }: { initial: FinancialLimitsData }) {
 
       {canManage ? (
         <div className="mt-4">
-          <Button
-            isLoading={update.isPending}
-            disabled={Boolean(error) || update.isPending}
-            onClick={save}
-          >
+          <Button disabled={Boolean(error) || update.isPending} onClick={() => setConfirming(true)}>
             Save limits
           </Button>
         </div>
@@ -160,6 +174,17 @@ function LimitsForm({ initial }: { initial: FinancialLimitsData }) {
           You do not have permission to change limits.
         </p>
       )}
+
+      <ConfirmationDialog
+        isOpen={confirming}
+        title="Apply new limits?"
+        description="These limits take effect immediately and govern every member's deposits, withdrawals and early-unlock fees platform-wide."
+        confirmLabel="Apply limits"
+        mobileSheet
+        isConfirming={update.isPending}
+        onConfirm={save}
+        onCancel={() => setConfirming(false)}
+      />
     </ContentCard>
   );
 }
@@ -181,7 +206,18 @@ export default function FinanceLimitsPage() {
         <LoadingScreen message="Loading limits…" />
       ) : query.isError || !query.data ? (
         <Alert variant="destructive" title="Could not load limits">
-          {query.error?.message ?? 'Limits are unavailable.'}
+          <div className="space-y-3">
+            <p>{query.error?.message ?? 'Limits are unavailable.'}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void query.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         </Alert>
       ) : (
         <LimitsForm initial={query.data} />
