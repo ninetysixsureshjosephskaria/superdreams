@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 
 import { ROUTES } from '@/constants';
@@ -32,11 +32,29 @@ const signUpSchema = z
   });
 type SignUpValues = z.infer<typeof signUpSchema>;
 
+/** sessionStorage key that survives a refresh/nav so `?ref=` is not lost. */
+const REF_STORAGE_KEY = 'sd:ref';
+
 /** Member sign-up. Connects to POST /api/v1/auth/register. */
 export default function SignUpPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [formError, setFormError] = useState<string | null>(null);
   const [createdEmail, setCreatedEmail] = useState<string | null>(null);
+
+  // Effective referral code = URL `?ref=` first, else a previously persisted one.
+  const urlRef = searchParams.get('ref');
+  const [referralCode, setReferralCode] = useState<string | null>(
+    () => urlRef ?? sessionStorage.getItem(REF_STORAGE_KEY),
+  );
+
+  // Persist a code arriving via the URL so a refresh or navigation keeps it.
+  useEffect(() => {
+    if (urlRef) {
+      sessionStorage.setItem(REF_STORAGE_KEY, urlRef);
+      setReferralCode(urlRef);
+    }
+  }, [urlRef]);
 
   const {
     register,
@@ -55,7 +73,11 @@ export default function SignUpPage() {
         lastName: values.lastName,
         email: values.email,
         password: values.password,
+        // The referral code is captured from the link only; the member never
+        // edits it and we never send referredBy/partnerId from the frontend.
+        ...(referralCode ? { referralCode } : {}),
       });
+      sessionStorage.removeItem(REF_STORAGE_KEY);
       setCreatedEmail(result.email);
     } catch (error) {
       setFormError(
@@ -91,6 +113,12 @@ export default function SignUpPage() {
                   <CardTitle className="text-2xl">Create your account</CardTitle>
                   <p className="text-sm text-muted-foreground">Join Super Dreams in a minute.</p>
                 </div>
+
+                {referralCode ? (
+                  <Alert variant="success" title="You're joining via a referral invitation">
+                    Your account will be linked to the member who invited you.
+                  </Alert>
+                ) : null}
 
                 {formError ? (
                   <Alert variant="destructive" title="Unable to sign up">

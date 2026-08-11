@@ -4,6 +4,8 @@ import { createDatabaseConnection } from '@/database/connection';
 import '@/modules/rbac/seed';
 // Side-effect import: register the currencies reference seed (no native deps).
 import './currencies';
+// Side-effect import: register the member referral-code backfill seed (no native deps).
+import './member-referral-codes';
 
 import { runSeeds } from './index';
 

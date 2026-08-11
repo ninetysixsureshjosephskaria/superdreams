@@ -104,6 +104,7 @@ const registerSchema: FastifySchema = {
       password: { type: 'string' },
       firstName: { type: 'string' },
       lastName: { type: 'string' },
+      referralCode: { type: 'string' },
     },
   },
 };

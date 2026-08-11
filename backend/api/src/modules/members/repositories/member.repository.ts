@@ -61,6 +61,39 @@ export class MemberRepository extends BaseRepository<typeof members> {
     return rows[0] ?? null;
   }
 
+  /** Resolves a member by their self-service referral code (Phase 2H). */
+  public async findByReferralCode(code: string): Promise<MemberRow | null> {
+    const rows = await this.db
+      .select()
+      .from(members)
+      .where(and(eq(members.referralCode, code), notDeleted(members.deletedAt)))
+      .limit(1);
+    return rows[0] ?? null;
+  }
+
+  /**
+   * Applies a resolved referral relationship in a single UPDATE: sets
+   * `referredBy` and `partnerId` to the referrer (approved decision 1 — same
+   * value) and clears `pendingReferrerId`. Called at email verification once the
+   * referrer's eligibility and the self/cycle guards have passed.
+   */
+  public async applyReferral(
+    memberId: string,
+    referrerId: string,
+    updatedBy: string,
+  ): Promise<void> {
+    await this.db
+      .update(members)
+      .set({
+        referredBy: referrerId,
+        partnerId: referrerId,
+        pendingReferrerId: null,
+        updatedBy,
+        updatedAt: new Date(),
+      })
+      .where(eq(members.id, memberId));
+  }
+
   /** Paginated search + filter + sort. All params are already validated. */
   public async search(query: ListMembersQuery): Promise<{ rows: MemberRow[]; total: number }> {
     const conditions: SQL[] = [notDeleted(members.deletedAt)];

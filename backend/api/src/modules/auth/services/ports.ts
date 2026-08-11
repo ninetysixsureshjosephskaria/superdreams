@@ -21,6 +21,8 @@ export interface MemberProvisioningPort {
     email: string;
     firstName?: string | null;
     lastName?: string | null;
+    /** Inbound self-service referral code (`?ref=`); optional, never trusted for eligibility here. */
+    referralCode?: string | undefined;
   }): Promise<void>;
 
   /**

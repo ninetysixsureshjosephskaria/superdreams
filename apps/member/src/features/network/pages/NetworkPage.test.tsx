@@ -34,6 +34,8 @@ const SUMMARY: ReferralSummary = {
   partnerId: null,
   directReferralCount: 2,
   totalDownlineCount: 3,
+  referralCode: 'MYCODE',
+  referrer: { memberId: 'up-1', memberNumber: 'M-000', name: 'Upline Uma' },
 };
 
 function node(overrides: Partial<NetworkMemberNode>): NetworkMemberNode {
@@ -127,5 +129,40 @@ describe('NetworkPage', () => {
     renderPage();
     expect(await screen.findByText(/Could not load your network/i)).toBeInTheDocument();
     expect(screen.getByText('Forbidden')).toBeInTheDocument();
+  });
+
+  it('renders the referral link and copies it via the clipboard', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+
+    renderPage();
+    await screen.findByText('M-001');
+
+    const expectedUrl = `${window.location.origin}/signup?ref=MYCODE`;
+    const linkInput = screen.getByLabelText<HTMLInputElement>('Your referral link');
+    expect(linkInput.value).toBe(expectedUrl);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
+    expect(writeText).toHaveBeenCalledWith(expectedUrl);
+  });
+
+  it('renders the upline referrer', async () => {
+    renderPage();
+    expect(await screen.findByText(/Referred by:/)).toBeInTheDocument();
+    expect(screen.getByText('Upline Uma')).toBeInTheDocument();
+    expect(screen.getByText(/M-000/)).toBeInTheDocument();
+  });
+
+  it('hides the referral card when the member has no referral code', async () => {
+    vi.mocked(networkApi.getMyReferralSummary).mockResolvedValue({
+      ...SUMMARY,
+      referralCode: null,
+      referrer: null,
+    });
+    renderPage();
+    await screen.findByText('M-001');
+
+    expect(screen.queryByText('Your referral link')).not.toBeInTheDocument();
+    expect(screen.getByText(/You joined directly/i)).toBeInTheDocument();
   });
 });

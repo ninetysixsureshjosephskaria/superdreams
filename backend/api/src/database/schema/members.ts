@@ -41,10 +41,21 @@ export const members = pgTable(
      */
     referredBy: uuid('referred_by').references((): AnyPgColumn => members.id),
     partnerId: uuid('partner_id').references((): AnyPgColumn => members.id),
+    /**
+     * Self-service referral (Phase 2H). `referralCode` is a permanent, reusable,
+     * opaque member-owned code that maps 1:1 to this member; it backs the
+     * `/signup?ref=<code>` link. `pendingReferrerId` captures the referrer at
+     * registration (resolved server-side from the code) and is applied to
+     * `referredBy`/`partnerId` at email verification, then cleared. Distinct from
+     * the admin `invites` entity, which is unchanged.
+     */
+    referralCode: text('referral_code'),
+    pendingReferrerId: uuid('pending_referrer_id').references((): AnyPgColumn => members.id),
   },
   (table) => [
     uniqueIndex('members_member_number_uq').on(table.memberNumber),
     uniqueIndex('members_email_uq').on(table.email),
+    uniqueIndex('members_referral_code_uq').on(table.referralCode),
     index('members_status_idx').on(table.status),
     index('members_user_id_idx').on(table.userId),
     index('members_last_name_idx').on(table.lastName),

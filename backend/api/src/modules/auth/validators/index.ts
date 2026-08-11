@@ -37,6 +37,8 @@ export const registerSchema = z.object({
   password: passwordSchema,
   firstName: z.string().trim().min(1).max(100),
   lastName: z.string().trim().min(1).max(100),
+  /** Optional self-service referral code from the signup link (`?ref=`). */
+  referralCode: z.string().trim().min(1).max(64).optional(),
 });
 
 export const resendVerificationSchema = z.object({

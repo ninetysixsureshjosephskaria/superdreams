@@ -75,6 +75,8 @@ export interface RegisterInput {
   password: string;
   firstName: string;
   lastName: string;
+  /** Optional self-service referral code from the signup link (`?ref=`). */
+  referralCode?: string;
 }
 
 /** `verificationToken`/`resetToken` are only present outside production (local testing). */

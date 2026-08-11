@@ -1,12 +1,15 @@
+import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 
 import { PageHeader } from '@/components/page-header';
-import type { NetworkMemberNode } from '@superdreams/api-client';
+import type { NetworkMemberNode, ReferralSummary } from '@superdreams/api-client';
 import {
   Alert,
   Badge,
+  Button,
   ContentCard,
   EmptyState,
+  Input,
   LoadingScreen,
   Spinner,
   Tabs,
@@ -113,6 +116,78 @@ function DownlinePanel() {
   );
 }
 
+/**
+ * "Your referral link" card. People who join through this link become the
+ * member's direct referrals. Hidden when the member has no referral code yet.
+ */
+function ReferralLinkCard({ referralCode }: { referralCode: string | null }) {
+  const [copied, setCopied] = useState(false);
+
+  if (!referralCode) {
+    return null;
+  }
+
+  const link = `${window.location.origin}/signup?ref=${referralCode}`;
+  const canCopy = typeof navigator.clipboard?.writeText === 'function';
+  const canShare = typeof navigator.share === 'function';
+
+  const handleCopy = (): void => {
+    if (!canCopy) {
+      return;
+    }
+    void navigator.clipboard.writeText(link).then(() => {
+      setCopied(true);
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    });
+  };
+
+  const handleShare = (): void => {
+    if (canShare) {
+      void navigator.share({ url: link });
+    }
+  };
+
+  return (
+    <ContentCard title="Your referral link" className="mb-6">
+      <div className="space-y-3">
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Input readOnly value={link} aria-label="Your referral link" className="flex-1" />
+          <div className="flex gap-2">
+            {canCopy ? (
+              <Button type="button" variant="secondary" onClick={handleCopy}>
+                {copied ? 'Copied' : 'Copy'}
+              </Button>
+            ) : null}
+            {canShare ? (
+              <Button type="button" variant="outline" onClick={handleShare}>
+                Share
+              </Button>
+            ) : null}
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          People who join through this link become your direct referrals.
+        </p>
+      </div>
+    </ContentCard>
+  );
+}
+
+/** Shows who referred the member (upline), or a subtle "joined directly" note. */
+function UplineNote({ referrer }: { referrer: ReferralSummary['referrer'] }) {
+  if (!referrer) {
+    return <p className="text-xs text-muted-foreground">You joined directly.</p>;
+  }
+  return (
+    <p className="text-sm text-muted-foreground">
+      Referred by: <span className="font-medium text-foreground">{referrer.name}</span> (
+      {referrer.memberNumber})
+    </p>
+  );
+}
+
 function OverviewStat({ label, value }: { label: string; value: number }) {
   return (
     <div className="text-center">
@@ -140,7 +215,8 @@ export default function NetworkPage() {
     );
   }
 
-  const { memberNumber, directReferralCount, totalDownlineCount } = summary.data;
+  const { memberNumber, directReferralCount, totalDownlineCount, referralCode, referrer } =
+    summary.data;
 
   return (
     <>
@@ -149,10 +225,15 @@ export default function NetworkPage() {
       </Helmet>
       <PageHeader title="My network" description={memberNumber} />
 
+      <ReferralLinkCard referralCode={referralCode} />
+
       <ContentCard className="mb-6">
-        <div className="grid grid-cols-2 gap-4">
-          <OverviewStat label="Direct referrals" value={directReferralCount} />
-          <OverviewStat label="Total network" value={totalDownlineCount} />
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <OverviewStat label="Direct referrals" value={directReferralCount} />
+            <OverviewStat label="Total network" value={totalDownlineCount} />
+          </div>
+          <UplineNote referrer={referrer} />
         </div>
       </ContentCard>
 

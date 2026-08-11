@@ -63,6 +63,7 @@ export class RegistrationService {
       email: user.email,
       firstName: user.firstName ?? data.firstName,
       lastName: user.lastName ?? data.lastName,
+      referralCode: data.referralCode,
     });
     const token = await this.emailVerification.requestVerification(user.id);
     await this.email.sendVerificationEmail(user.email, user.firstName ?? data.firstName, token);

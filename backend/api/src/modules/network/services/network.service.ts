@@ -68,6 +68,7 @@ export class NetworkService {
     }
     const directReferralCount = await this.net.countDirectReferrals(memberId);
     const downline = await this.walkDownline(memberId);
+    const referrerBrief = brief.referredBy ? await this.net.findBrief(brief.referredBy) : null;
     return {
       memberId: brief.id,
       memberNumber: brief.memberNumber,
@@ -75,6 +76,14 @@ export class NetworkService {
       partnerId: brief.partnerId,
       directReferralCount,
       totalDownlineCount: downline.length,
+      referralCode: brief.referralCode,
+      referrer: referrerBrief
+        ? {
+            memberId: referrerBrief.id,
+            memberNumber: referrerBrief.memberNumber,
+            name: fullName(referrerBrief),
+          }
+        : null,
     };
   }
 

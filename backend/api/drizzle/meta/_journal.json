@@ -155,6 +155,13 @@
       "when": 1786223077011,
       "tag": "0021_activation_bonus",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1786274873179,
+      "tag": "0022_cynical_the_anarchist",
+      "breakpoints": true
     }
   ]
 }

@@ -5,6 +5,7 @@ import { buildPaginatedResult } from '@/database/helpers';
 import type { members } from '@/database/schema';
 import { ConflictError, NotFoundError, ValidationError } from '@/errors';
 
+import { generateReferralCode } from '../domain/referral-code';
 import type {
   MemberActivityData,
   MemberActor,
@@ -53,6 +54,46 @@ const ALLOWED_TRANSITIONS: Record<MemberStatus, readonly MemberStatus[]> = {
   SUSPENDED: ['ACTIVE', 'ARCHIVED'],
   ARCHIVED: ['ACTIVE'],
 };
+
+/** Bounded generate-with-retry budget for collision-safe referral codes. */
+const REFERRAL_CODE_MAX_ATTEMPTS = 5;
+
+/**
+ * Flattens an error and its `cause` chain into a lowercase haystack. Drizzle
+ * wraps driver errors, so the Postgres `code`/`constraint`/`detail` may live on
+ * a nested `cause` rather than the top-level error.
+ */
+function collectErrorText(error: unknown, depth = 0): string {
+  if (depth > 4 || typeof error !== 'object' || error === null) {
+    return '';
+  }
+  const record = error as Record<string, unknown>;
+  const parts: string[] = [];
+  for (const key of ['code', 'constraint', 'constraint_name', 'detail', 'message']) {
+    const value = record[key];
+    if (typeof value === 'string') {
+      parts.push(value);
+    }
+  }
+  if (record.cause !== undefined) {
+    parts.push(collectErrorText(record.cause, depth + 1));
+  }
+  return parts.join(' ');
+}
+
+/**
+ * True when the error is a Postgres unique-constraint violation (23505) on the
+ * referral-code index — the signal to regenerate and retry the insert. Anything
+ * else (e.g. an email/member-number collision) is deliberately NOT matched so it
+ * propagates untouched.
+ */
+function isReferralCodeUniqueViolation(error: unknown): boolean {
+  const text = collectErrorText(error).toLowerCase();
+  const isUnique = text.includes('23505') || text.includes('unique');
+  const isReferralCode =
+    text.includes('referral_code') || text.includes('members_referral_code_uq');
+  return isUnique && isReferralCode;
+}
 
 function snapshot(row: MemberRow): Record<string, unknown> {
   return {
@@ -113,9 +154,17 @@ export class MemberService {
     email: string;
     firstName?: string | null;
     lastName?: string | null;
+    /**
+     * The joiner's inbound `?ref=<code>` value (Phase 2H). Resolved server-side
+     * to an eligible referrer and captured as `pendingReferrerId`; an invalid,
+     * unknown or ineligible code NEVER blocks registration (approved decision 5).
+     */
+    referralCode?: string | undefined;
   }): Promise<void> {
     const alreadyLinked = await this.members.findByUserId(input.userId);
     if (alreadyLinked) {
+      // Existing relationships are never touched here; only backfill a code.
+      await this.ensureReferralCode(alreadyLinked, input.userId);
       return;
     }
     const byEmail = await this.members.findByEmail(input.email);
@@ -123,16 +172,26 @@ export class MemberService {
       if (byEmail.userId === null) {
         await this.members.update(byEmail.id, { userId: input.userId, updatedBy: input.userId });
       }
+      await this.ensureReferralCode(byEmail, input.userId);
       return;
     }
+
+    // Resolve the inbound referral code to an eligible (ACTIVE) referrer. A brand
+    // new member id always differs from the referrer, so no self-check is needed
+    // here; the self/cycle guards run at verification when the id exists.
+    const pendingReferrerId = await this.resolvePendingReferrer(input.referralCode);
+
     const memberNumber = `M-${randomUUID().slice(0, 8).toUpperCase()}`;
-    const member = await this.members.create({
+    // Single atomic insert captures the member number, the freshly generated
+    // referral code, and any pending referrer together (transaction boundary 12).
+    const member = await this.createMemberWithReferralCode({
       memberNumber,
       userId: input.userId,
       firstName: input.firstName ?? '',
       lastName: input.lastName ?? '',
       email: input.email,
       status: 'PENDING',
+      pendingReferrerId,
       createdBy: input.userId,
       updatedBy: input.userId,
     });
@@ -147,18 +206,26 @@ export class MemberService {
 
   /**
    * Idempotently transitions a user's linked Member profile to ACTIVE on account
-   * activation (email verification). No-op if unlinked or already active (D6).
+   * activation (email verification) AND applies any captured referral. Structured
+   * so a previously-failed relationship apply is retried on a later call: the
+   * status change and the referral apply are evaluated independently, and the
+   * apply is guarded by `referredBy === null` for exactly-once semantics (D6).
    */
   public async activateByUserId(userId: string): Promise<void> {
     const member = await this.members.findByUserId(userId);
-    if (!member || member.status === 'ACTIVE') {
+    if (!member) {
       return;
     }
-    await this.changeStatus(
-      member.id,
-      { status: 'ACTIVE', reason: 'Email verified — account activated' },
-      { userId, ipAddress: null, userAgent: null, correlationId: null },
-    );
+    if (member.status !== 'ACTIVE') {
+      await this.changeStatus(
+        member.id,
+        { status: 'ACTIVE', reason: 'Email verified — account activated' },
+        { userId, ipAddress: null, userAgent: null, correlationId: null },
+      );
+    }
+    // Runs regardless of whether activation just happened, so a relationship that
+    // failed to apply on an earlier call can complete now.
+    await this.applyPendingReferral(member, userId);
   }
 
   public async create(input: unknown, actor: MemberActor): Promise<MemberDetail> {
@@ -486,6 +553,135 @@ export class MemberService {
     await this.requireMember(id);
     const rows = await this.statusHistory.listByMember(id);
     return rows.map(toMemberStatusHistory);
+  }
+
+  // --- Self-service referral (Phase 2H) --------------------------------------
+
+  /**
+   * Generates a collision-safe referral code: up to {@link REFERRAL_CODE_MAX_ATTEMPTS}
+   * attempts, each checked against the repository, returning the first free code.
+   * The DB unique index `members_referral_code_uq` is the final backstop, so the
+   * fallthrough (astronomically unlikely) still relies on generate-with-retry at
+   * the insert site — never on randomness alone.
+   */
+  private async generateUniqueReferralCode(): Promise<string> {
+    for (let attempt = 0; attempt < REFERRAL_CODE_MAX_ATTEMPTS; attempt += 1) {
+      const code = generateReferralCode();
+      const existing = await this.members.findByReferralCode(code);
+      if (!existing) {
+        return code;
+      }
+    }
+    return generateReferralCode();
+  }
+
+  /**
+   * Inserts a new member with a freshly generated referral code. On a unique
+   * violation from the referral code (only), it regenerates and retries the
+   * insert (bounded); any other error propagates untouched.
+   */
+  private async createMemberWithReferralCode(
+    base: Omit<InferInsertModel<typeof members>, 'referralCode'>,
+  ): Promise<MemberRow> {
+    for (let attempt = 0; attempt < REFERRAL_CODE_MAX_ATTEMPTS; attempt += 1) {
+      const referralCode = await this.generateUniqueReferralCode();
+      try {
+        return await this.members.create({ ...base, referralCode });
+      } catch (error) {
+        const lastAttempt = attempt === REFERRAL_CODE_MAX_ATTEMPTS - 1;
+        if (!isReferralCodeUniqueViolation(error) || lastAttempt) {
+          throw error;
+        }
+      }
+    }
+    // Unreachable — the loop either returns or throws.
+    throw new Error('Failed to allocate a unique referral code.');
+  }
+
+  /**
+   * Best-effort backfill of a referral code for an existing member (early-return
+   * provisioning branches). Never changes relationships; no-op when a code
+   * already exists.
+   */
+  private async ensureReferralCode(member: MemberRow, updatedBy: string): Promise<void> {
+    if (member.referralCode) {
+      return;
+    }
+    for (let attempt = 0; attempt < REFERRAL_CODE_MAX_ATTEMPTS; attempt += 1) {
+      const referralCode = await this.generateUniqueReferralCode();
+      try {
+        await this.members.update(member.id, { referralCode, updatedBy });
+        return;
+      } catch (error) {
+        const lastAttempt = attempt === REFERRAL_CODE_MAX_ATTEMPTS - 1;
+        if (!isReferralCodeUniqueViolation(error) || lastAttempt) {
+          throw error;
+        }
+      }
+    }
+  }
+
+  /**
+   * Resolves an inbound referral code to an eligible referrer id, or `null`.
+   * Eligibility (approved decision 4): the referrer must exist and be ACTIVE. A
+   * missing / unknown / ineligible code returns `null` (no attribution) and must
+   * never block registration (approved decision 5).
+   */
+  private async resolvePendingReferrer(referralCode?: string | null): Promise<string | null> {
+    if (!referralCode) {
+      return null;
+    }
+    const referrer = await this.members.findByReferralCode(referralCode);
+    if (!referrer || referrer.status !== 'ACTIVE') {
+      return null;
+    }
+    return referrer.id;
+  }
+
+  /**
+   * Applies a captured referral at activation. Exactly-once: only runs while a
+   * `pendingReferrerId` is set and the member is still unattributed
+   * (`referredBy === null`). Guards: referrer exists, is ACTIVE, is not the member
+   * itself, and does not close a cycle. On any guard failure the pending referrer
+   * is cleared (so it is not retried forever); a transient apply failure leaves
+   * both fields intact so a later call retries.
+   */
+  private async applyPendingReferral(member: MemberRow, userId: string): Promise<void> {
+    if (!member.pendingReferrerId || member.referredBy !== null) {
+      return;
+    }
+    const referrer = await this.members.findById(member.pendingReferrerId);
+    const eligible =
+      referrer !== null &&
+      referrer.status === 'ACTIVE' &&
+      referrer.id !== member.id &&
+      !(await this.wouldCreateCycle(referrer, member.id));
+    if (!eligible) {
+      await this.members.update(member.id, { pendingReferrerId: null, updatedBy: userId });
+      return;
+    }
+    await this.members.applyReferral(member.id, referrer.id, userId);
+  }
+
+  /**
+   * Cycle guard: walks `referredBy` upward from the prospective referrer. If the
+   * new member's id is reached, applying the referral would close a cycle, so it
+   * is rejected. Also stops on any pre-existing cycle in the data.
+   */
+  private async wouldCreateCycle(referrer: MemberRow, newMemberId: string): Promise<boolean> {
+    const seen = new Set<string>([referrer.id]);
+    let current: MemberRow | null = referrer;
+    while (current?.referredBy) {
+      if (current.referredBy === newMemberId) {
+        return true;
+      }
+      if (seen.has(current.referredBy)) {
+        return true;
+      }
+      seen.add(current.referredBy);
+      current = await this.members.findById(current.referredBy);
+    }
+    return false;
   }
 
   private async assembleDetail(member: MemberRow): Promise<MemberDetail> {

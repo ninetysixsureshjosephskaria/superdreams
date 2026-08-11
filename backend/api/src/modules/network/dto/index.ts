@@ -63,6 +63,10 @@ export interface ReferralSummary {
   partnerId: string | null;
   directReferralCount: number;
   totalDownlineCount: number;
+  /** The member's own self-service referral code (Phase 2H); null until backfilled. */
+  referralCode: string | null;
+  /** The member who referred this member (resolved from `referredBy`); null at the top. */
+  referrer: { memberId: string; memberNumber: string; name: string } | null;
 }
 
 /** A partner card in the admin network tree. */

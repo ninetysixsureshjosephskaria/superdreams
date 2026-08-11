@@ -15,6 +15,7 @@ export interface MemberBrief {
   status: string;
   referredBy: string | null;
   partnerId: string | null;
+  referralCode: string | null;
 }
 
 const briefColumns = {
@@ -26,6 +27,7 @@ const briefColumns = {
   status: members.status,
   referredBy: members.referredBy,
   partnerId: members.partnerId,
+  referralCode: members.referralCode,
 } as const;
 
 /**

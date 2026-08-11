@@ -48,6 +48,7 @@ export function registerRoutes(app: FastifyInstance): void {
       email: string;
       firstName?: string | null;
       lastName?: string | null;
+      referralCode?: string | undefined;
     }) => membersModule.service.provisionForUser(input),
     activateForUser: (userId: string) => membersModule.service.activateByUserId(userId),
   };
