@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm';
 
 import type { Database } from '@/database/client';
 import { userRoles } from '@/database/schema';
+import type { Executor } from '@/database/types';
 
 /** Persistence for User → Role assignments (multiple roles per user). */
 export class UserRoleRepository {
@@ -16,8 +17,19 @@ export class UserRoleRepository {
     return rows[0] !== undefined;
   }
 
-  public async assign(userId: string, roleId: string, createdBy: string | null): Promise<void> {
-    await this.db.insert(userRoles).values({ userId, roleId, createdBy }).onConflictDoNothing();
+  /**
+   * Inserts a user→role assignment, idempotent via `user_roles_user_role_uq`
+   * (`onConflictDoNothing`). Accepts an optional `executor` so the insert can
+   * participate in a caller's transaction; defaults to the base connection, so
+   * existing callers are behaviourally unchanged.
+   */
+  public async assign(
+    userId: string,
+    roleId: string,
+    createdBy: string | null,
+    executor: Executor = this.db,
+  ): Promise<void> {
+    await executor.insert(userRoles).values({ userId, roleId, createdBy }).onConflictDoNothing();
   }
 
   public async remove(userId: string, roleId: string): Promise<boolean> {

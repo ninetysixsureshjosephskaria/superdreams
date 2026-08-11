@@ -308,3 +308,15 @@ export const settingValueType = pgEnum('setting_value_type', [
   'JSON',
   'ARRAY',
 ]);
+
+/**
+ * Member→Partner upgrade request lifecycle (P1.3). PENDING is the only actionable
+ * state; APPROVED/REJECTED are terminal. A REJECTED member may submit a new
+ * request (a fresh PENDING row) — the partial unique index only forbids two
+ * concurrent PENDING rows per member.
+ */
+export const partnerRequestStatus = pgEnum('partner_request_status', [
+  'PENDING',
+  'APPROVED',
+  'REJECTED',
+]);

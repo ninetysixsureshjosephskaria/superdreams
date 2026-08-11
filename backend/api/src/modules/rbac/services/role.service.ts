@@ -1,3 +1,4 @@
+import type { Executor } from '@/database/types';
 import { ConflictError, NotFoundError } from '@/errors';
 import type { IdentityModule } from '@/modules/identity';
 
@@ -61,6 +62,50 @@ export class RoleService {
       throw new ConflictError('Role is already assigned to the user.');
     }
     await this.userRoles.assign(userId, roleId, actorId);
+    await this.resolver.invalidate(userId);
+    await this.events.publish({ type: 'RoleAssigned', userId, roleId, actorId, at: new Date() });
+  }
+
+  /**
+   * Transaction-aware role assignment: performs the idempotent user→role INSERT
+   * **through the supplied transaction executor**, so the grant commits (and rolls
+   * back) atomically with the caller's own writes — e.g. a partner request flipped
+   * to APPROVED in the same transaction. Referential integrity is enforced by the
+   * `user_roles` foreign keys (a non-existent role or user makes the INSERT fail,
+   * aborting the transaction); the method issues NO base-connection reads, which
+   * would deadlock a single-connection transaction. Callers that need role/user
+   * pre-validation (with a clean `NotFoundError`) must do it before the
+   * transaction — the partner-request flow resolves the partner role id and
+   * re-checks the member/user up front.
+   *
+   * Unlike {@link assignRoleToUser} this is idempotent (already-assigned is a
+   * no-op via `onConflictDoNothing`, not a `ConflictError`) and deliberately does
+   * NOT invalidate the resolver cache or publish `RoleAssigned` — those non-DB
+   * side effects the caller MUST run only after the transaction commits (see
+   * {@link finalizeRoleAssignment}). Existing callers of `assignRoleToUser` are
+   * unaffected.
+   */
+  public async assignRoleToUserWithin(
+    tx: Executor,
+    roleId: string,
+    userId: string,
+    actorId: string | null,
+  ): Promise<void> {
+    await this.userRoles.assign(userId, roleId, actorId, tx);
+  }
+
+  /**
+   * Runs the post-commit side effects for a transactional role assignment:
+   * invalidate the resolver cache and publish `RoleAssigned`. Call this only
+   * AFTER the enclosing transaction has committed. Mirrors the ordering of
+   * {@link assignRoleToUser} (invalidate + publish happen after the durable
+   * insert), so RBAC semantics are unchanged.
+   */
+  public async finalizeRoleAssignment(
+    userId: string,
+    roleId: string,
+    actorId: string | null,
+  ): Promise<void> {
     await this.resolver.invalidate(userId);
     await this.events.publish({ type: 'RoleAssigned', userId, roleId, actorId, at: new Date() });
   }

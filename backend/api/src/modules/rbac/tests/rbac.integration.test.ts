@@ -1,12 +1,13 @@
 import { PGlite } from '@electric-sql/pglite';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/pglite';
 import { migrate } from 'drizzle-orm/pglite/migrator';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import type { Database } from '@/database/client';
-import { roles as rolesTable } from '@/database/schema';
+import { withTransaction } from '@/database/helpers/transaction';
+import { roles as rolesTable, userRoles } from '@/database/schema';
 import { ConflictError, ForbiddenError, NotFoundError } from '@/errors';
 import { createIdentityModule, type IdentityModule } from '@/modules/identity';
 
@@ -87,6 +88,61 @@ describe('rbac module (PGlite)', () => {
     expect(await rbac.authorization.hasRole(userId, ROLES.SUPER_ADMIN)).toBe(true);
   });
 
+  // --- P1.2 partner ownership authorization (RBAC layer) ------------------------
+
+  it('P1.2 Req6: a Member holds neither partner.network.read nor network.read', async () => {
+    const userId = await createUser('p12-member@authz.test');
+    await rbac.roles.assignRoleToUser(await roleId(ROLES.MEMBER), userId, null);
+    expect(await rbac.authorization.hasPermission(userId, PERMISSIONS.PARTNER_NETWORK_READ)).toBe(
+      false,
+    );
+    expect(await rbac.authorization.hasPermission(userId, PERMISSIONS.NETWORK_READ)).toBe(false);
+  });
+
+  it('P1.2 Req12: a Partner holds partner.network.read but NOT network.read (denied the admin cross-member endpoint) and cannot self-approve', async () => {
+    const userId = await createUser('p12-partner@authz.test');
+    await rbac.roles.assignRoleToUser(await roleId(ROLES.PARTNER), userId, null);
+    expect(await rbac.authorization.hasPermission(userId, PERMISSIONS.PARTNER_NETWORK_READ)).toBe(
+      true,
+    );
+    // network.read gates GET /network/members/:id and /network/partners → a Partner is denied.
+    expect(await rbac.authorization.hasPermission(userId, PERMISSIONS.NETWORK_READ)).toBe(false);
+    // A Partner cannot grant themselves the Partner role (no request-management power).
+    expect(
+      await rbac.authorization.hasPermission(userId, PERMISSIONS.PARTNER_REQUEST_APPROVE),
+    ).toBe(false);
+  });
+
+  it('P1.2 Req7/8: Admin retains network.read; Super-admin holds both network.read and partner.network.read', async () => {
+    const adminUser = await createUser('p12-admin@authz.test');
+    await rbac.roles.assignRoleToUser(await roleId(ROLES.ADMIN), adminUser, null);
+    expect(await rbac.authorization.hasPermission(adminUser, PERMISSIONS.NETWORK_READ)).toBe(true);
+    expect(
+      await rbac.authorization.hasPermission(adminUser, PERMISSIONS.PARTNER_REQUEST_APPROVE),
+    ).toBe(true);
+    // Admin manages partner requests but does not itself hold the partner-scoped read.
+    expect(
+      await rbac.authorization.hasPermission(adminUser, PERMISSIONS.PARTNER_NETWORK_READ),
+    ).toBe(false);
+
+    const superUser = await createUser('p12-super@authz.test');
+    await rbac.roles.assignRoleToUser(await roleId(ROLES.SUPER_ADMIN), superUser, null);
+    expect(await rbac.authorization.hasPermission(superUser, PERMISSIONS.NETWORK_READ)).toBe(true);
+    expect(
+      await rbac.authorization.hasPermission(superUser, PERMISSIONS.PARTNER_NETWORK_READ),
+    ).toBe(true);
+  });
+
+  it('P1.2 Req11: a Member + Partner dual role resolves the union (partner.network.read, still not network.read)', async () => {
+    const userId = await createUser('p12-dual@authz.test');
+    await rbac.roles.assignRoleToUser(await roleId(ROLES.MEMBER), userId, null);
+    await rbac.roles.assignRoleToUser(await roleId(ROLES.PARTNER), userId, null);
+    const resolved = await rbac.authorization.getEffective(userId);
+    expect(resolved.roleKeys).toEqual(expect.arrayContaining([ROLES.MEMBER, ROLES.PARTNER]));
+    expect(resolved.permissionKeys).toContain(PERMISSIONS.PARTNER_NETWORK_READ);
+    expect(resolved.permissionKeys).not.toContain(PERMISSIONS.NETWORK_READ);
+  });
+
   it('rejects duplicate role assignment and unknown role/user', async () => {
     const userId = await createUser('dup@rbac.test');
     const superAdminId = await roleId(ROLES.SUPER_ADMIN);
@@ -97,6 +153,62 @@ describe('rbac module (PGlite)', () => {
     await expect(
       rbac.roles.assignRoleToUser('00000000-0000-0000-0000-000000000000', userId, null),
     ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it('assignRoleToUserWithin: grants through a caller transaction and is idempotent', async () => {
+    const userId = await createUser('within-ok@rbac.test');
+    const memberRole = await roleId(ROLES.MEMBER);
+
+    await withTransaction(db, async (tx) => {
+      await rbac.roles.assignRoleToUserWithin(tx, memberRole, userId, null);
+    });
+    const afterFirst = await db
+      .select({ id: userRoles.id })
+      .from(userRoles)
+      .where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, memberRole)));
+    expect(afterFirst).toHaveLength(1); // grant committed with the transaction
+
+    // Idempotent: a repeat is a no-op (no ConflictError, no duplicate row).
+    await withTransaction(db, async (tx) => {
+      await rbac.roles.assignRoleToUserWithin(tx, memberRole, userId, null);
+    });
+    const afterSecond = await db
+      .select({ id: userRoles.id })
+      .from(userRoles)
+      .where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, memberRole)));
+    expect(afterSecond).toHaveLength(1);
+  });
+
+  it('assignRoleToUserWithin: rolls back with the enclosing transaction on later failure', async () => {
+    const userId = await createUser('within-rollback@rbac.test');
+    const memberRole = await roleId(ROLES.MEMBER);
+
+    await expect(
+      withTransaction(db, async (tx) => {
+        await rbac.roles.assignRoleToUserWithin(tx, memberRole, userId, null);
+        throw new Error('boom after grant');
+      }),
+    ).rejects.toThrow('boom after grant');
+
+    const rows = await db
+      .select({ id: userRoles.id })
+      .from(userRoles)
+      .where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, memberRole)));
+    expect(rows).toHaveLength(0); // the in-tx grant rolled back with the transaction
+  });
+
+  it('assignRoleToUserWithin: an unknown role id fails (FK) and grants nothing', async () => {
+    const userId = await createUser('within-unknown@rbac.test');
+    await expect(
+      withTransaction(db, (tx) =>
+        rbac.roles.assignRoleToUserWithin(tx, '00000000-0000-0000-0000-000000000000', userId, null),
+      ),
+    ).rejects.toThrow(); // FK violation on user_roles.role_id → transaction aborts
+    const rows = await db
+      .select({ id: userRoles.id })
+      .from(userRoles)
+      .where(eq(userRoles.userId, userId));
+    expect(rows).toHaveLength(0);
   });
 
   it('removes a role and reflects the change; removing again is NotFound', async () => {

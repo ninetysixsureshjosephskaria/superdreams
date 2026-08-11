@@ -99,6 +99,12 @@ export const PERMISSIONS = {
   NETWORK_READ: 'network.read',
   INVITE_SEND: 'invite.send',
 
+  // Partner — own-network read + Member→Partner upgrade requests (P1).
+  PARTNER_NETWORK_READ: 'partner.network.read',
+  PARTNER_REQUEST_READ: 'partner.request.read',
+  PARTNER_REQUEST_APPROVE: 'partner.request.approve',
+  PARTNER_REQUEST_REJECT: 'partner.request.reject',
+
   // Earnings — commission rules (Phase 2E).
   COMMISSION_MANAGE: 'commission.manage',
 
@@ -533,6 +539,31 @@ export const PERMISSION_DEFINITIONS: readonly PermissionDefinition[] = [
     action: 'bonus.manage',
     description: 'Configure and run the network-wide activation bonus.',
   },
+  {
+    key: PERMISSIONS.PARTNER_NETWORK_READ,
+    resource: 'partner',
+    action: 'network.read',
+    description:
+      "View one's own partner referral network (downline) and referred-member summaries, scoped to the partner's own network.",
+  },
+  {
+    key: PERMISSIONS.PARTNER_REQUEST_READ,
+    resource: 'partner',
+    action: 'request.read',
+    description: 'List and view Member-to-Partner upgrade requests.',
+  },
+  {
+    key: PERMISSIONS.PARTNER_REQUEST_APPROVE,
+    resource: 'partner',
+    action: 'request.approve',
+    description: 'Approve a Member-to-Partner upgrade request (assigns the partner role).',
+  },
+  {
+    key: PERMISSIONS.PARTNER_REQUEST_REJECT,
+    resource: 'partner',
+    action: 'request.reject',
+    description: 'Reject a Member-to-Partner upgrade request (leaves the user as a Member).',
+  },
 ];
 
 export const ROLES = {
@@ -586,14 +617,18 @@ export const SYSTEM_ROLE_DEFINITIONS: readonly SystemRoleDefinition[] = [
       PERMISSIONS.PROFIT_DISTRIBUTE,
       PERMISSIONS.BONUS_MANAGE,
       PERMISSIONS.ACTIVATION_BONUS_MANAGE,
+      // Partner — Member→Partner upgrade request management (P1).
+      PERMISSIONS.PARTNER_REQUEST_READ,
+      PERMISSIONS.PARTNER_REQUEST_APPROVE,
+      PERMISSIONS.PARTNER_REQUEST_REJECT,
     ],
   },
   {
     key: ROLES.PARTNER,
     name: 'Partner',
     description:
-      'Referral partner. Foundation role only in Phase 1 — no partner capabilities are granted yet (added in later phases).',
-    permissions: [],
+      "Referral partner, assigned via an approved Member-to-Partner upgrade request. Scoped to the partner's own referral network; a Member who refers others is NOT automatically a Partner. Ownership enforcement is wired in P1.",
+    permissions: [PERMISSIONS.PARTNER_NETWORK_READ],
   },
   {
     key: ROLES.MEMBER,

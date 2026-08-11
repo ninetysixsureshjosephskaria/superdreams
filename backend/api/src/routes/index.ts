@@ -16,6 +16,7 @@ import { registerGamesModule } from '@/modules/games';
 import { registerMembersModule } from '@/modules/members';
 import { registerNetworkModule } from '@/modules/network';
 import { registerNotificationsModule } from '@/modules/notifications';
+import { registerPartnerRequestsModule } from '@/modules/partner-requests';
 import { registerRbacModule } from '@/modules/rbac';
 import { registerReportsModule } from '@/modules/reports';
 import { registerRewardsModule } from '@/modules/rewards';
@@ -83,6 +84,7 @@ export function registerRoutes(app: FastifyInstance): void {
   registerCurrenciesModule(app);
   const financeModule = registerFinanceModule(app);
   registerNetworkModule(app);
+  registerPartnerRequestsModule(app);
   const earningsModule = registerEarningsModule(app);
 
   // --- Deposit approval → earnings orchestration ------------------------------

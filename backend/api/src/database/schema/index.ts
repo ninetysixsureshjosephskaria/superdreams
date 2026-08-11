@@ -16,6 +16,7 @@ export * from './members';
 export * from './wallet';
 export * from './finance';
 export * from './network';
+export * from './partner';
 export * from './earnings';
 export * from './profit';
 export * from './bonus';

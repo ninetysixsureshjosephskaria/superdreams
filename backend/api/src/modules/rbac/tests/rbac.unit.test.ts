@@ -47,6 +47,31 @@ describe('rbac catalog', () => {
     const superAdmin = SYSTEM_ROLE_DEFINITIONS.find((role) => role.key === ROLES.SUPER_ADMIN);
     expect(superAdmin?.permissions).toBe('*');
   });
+
+  it('scopes the partner and admin partner.* grants (P1.1)', () => {
+    const partner = SYSTEM_ROLE_DEFINITIONS.find((role) => role.key === ROLES.PARTNER);
+    const member = SYSTEM_ROLE_DEFINITIONS.find((role) => role.key === ROLES.MEMBER);
+    const adminRole = SYSTEM_ROLE_DEFINITIONS.find((role) => role.key === ROLES.ADMIN);
+
+    // Partner holds exactly its own-network read capability — no request-management power.
+    expect(partner?.permissions).toEqual([PERMISSIONS.PARTNER_NETWORK_READ]);
+    expect(partner?.permissions).not.toContain(PERMISSIONS.PARTNER_REQUEST_APPROVE);
+    expect(partner?.permissions).not.toContain(PERMISSIONS.PARTNER_REQUEST_REJECT);
+
+    // Admin holds the request-management permissions but NOT the partner-scoped read.
+    const adminPerms = adminRole?.permissions as readonly string[];
+    expect(adminPerms).toEqual(
+      expect.arrayContaining([
+        PERMISSIONS.PARTNER_REQUEST_READ,
+        PERMISSIONS.PARTNER_REQUEST_APPROVE,
+        PERMISSIONS.PARTNER_REQUEST_REJECT,
+      ]),
+    );
+    expect(adminPerms).not.toContain(PERMISSIONS.PARTNER_NETWORK_READ);
+
+    // Member remains an empty role (no partner capabilities granted).
+    expect(member?.permissions).toEqual([]);
+  });
 });
 
 describe('rbac guards', () => {
