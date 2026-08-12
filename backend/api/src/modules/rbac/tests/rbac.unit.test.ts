@@ -72,6 +72,32 @@ describe('rbac catalog', () => {
     // Member remains an empty role (no partner capabilities granted).
     expect(member?.permissions).toEqual([]);
   });
+
+  it('scopes the admin redemption.request.* grants; partner/member get none (P2)', () => {
+    const partner = SYSTEM_ROLE_DEFINITIONS.find((role) => role.key === ROLES.PARTNER);
+    const member = SYSTEM_ROLE_DEFINITIONS.find((role) => role.key === ROLES.MEMBER);
+    const adminRole = SYSTEM_ROLE_DEFINITIONS.find((role) => role.key === ROLES.ADMIN);
+    const adminPerms = adminRole?.permissions as readonly string[];
+
+    // Admin holds all three redemption-request management permissions.
+    expect(adminPerms).toEqual(
+      expect.arrayContaining([
+        PERMISSIONS.REDEMPTION_REQUEST_READ,
+        PERMISSIONS.REDEMPTION_REQUEST_APPROVE,
+        PERMISSIONS.REDEMPTION_REQUEST_REJECT,
+      ]),
+    );
+
+    // Neither partner nor member receives any redemption-request permission.
+    for (const perm of [
+      PERMISSIONS.REDEMPTION_REQUEST_READ,
+      PERMISSIONS.REDEMPTION_REQUEST_APPROVE,
+      PERMISSIONS.REDEMPTION_REQUEST_REJECT,
+    ]) {
+      expect(partner?.permissions).not.toContain(perm);
+      expect(member?.permissions).not.toContain(perm);
+    }
+  });
 });
 
 describe('rbac guards', () => {

@@ -105,6 +105,13 @@ export const PRIMARY_NAV_SECTIONS: NavSection[] = [
         icon: 'gift',
         permission: 'reward.read',
       },
+      {
+        key: 'redemption-requests',
+        label: 'Redemption Requests',
+        path: ROUTES.redemptionRequests,
+        icon: 'gift',
+        permission: 'redemption.request.read',
+      },
       { key: 'dream-store', label: 'Dream Store', path: ROUTES.dreamStore, icon: 'gift' },
       {
         key: 'campaigns',

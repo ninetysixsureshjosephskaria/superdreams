@@ -20,9 +20,9 @@ export function QuickActions() {
         <Button
           variant="outline"
           leftIcon={<Icon name="gift" size="sm" />}
-          onClick={() => navigate(ROUTES.dreamStore)}
+          onClick={() => navigate(ROUTES.redemption)}
         >
-          Dream Store
+          Redeem points
         </Button>
         <Button
           variant="outline"

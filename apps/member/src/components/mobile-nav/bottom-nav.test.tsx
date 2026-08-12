@@ -11,7 +11,7 @@ describe('BottomNav', () => {
         <BottomNav />
       </MemoryRouter>,
     );
-    for (const label of ['Home', 'Games', 'Dream Store', 'Wallet']) {
+    for (const label of ['Home', 'Games', 'Redeem', 'Wallet']) {
       expect(screen.getByRole('link', { name: label })).toBeInTheDocument();
     }
     expect(screen.getByRole('button', { name: 'More navigation' })).toBeInTheDocument();

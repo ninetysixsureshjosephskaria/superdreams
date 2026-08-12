@@ -19,7 +19,7 @@ const WalletPage = lazy(() => import('@/features/wallet/pages/WalletPage'));
 const NetworkPage = lazy(() => import('@/features/network/pages/NetworkPage'));
 const EarningsPage = lazy(() => import('@/features/earnings/pages/EarningsPage'));
 const GamesPage = lazy(() => import('@/features/games/pages/GamesPage'));
-const DreamStorePage = lazy(() => import('@/features/dream-store/pages/DreamStorePage'));
+const RedemptionPage = lazy(() => import('@/features/redemption/pages/RedemptionPage'));
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));
 const SignUpPage = lazy(() => import('@/features/auth/pages/SignUpPage'));
 const ActivatePage = lazy(() => import('@/features/auth/pages/ActivatePage'));
@@ -34,10 +34,11 @@ const NotFoundPage = lazy(() => import('@/pages/not-found/NotFoundPage'));
 /**
  * Application router.
  *
- * Navigation covers Home, Games, Dream Store, Wallet, Network, Earnings and
- * Profile (see `navigation/nav-config.ts`). All are fully functional and backed
- * by the real API. Other member feature pages remain in the codebase but are
- * intentionally not routed here.
+ * Navigation covers Home, Games, Redeem, Wallet, Network, Earnings and Profile
+ * (see `navigation/nav-config.ts`). All are fully functional and backed by the
+ * real API. Other member feature pages remain in the codebase but are
+ * intentionally not routed here — the Dream Store page code is retained (backend
+ * unchanged) but is not exposed in the Member Portal (P2).
  *
  * The member area is wrapped in {@link ProtectedRoute} (a mock guard in this
  * phase — no real authentication). Error pages live in the public layout so a
@@ -54,7 +55,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <DashboardPage /> },
       { path: ROUTES.games.replace(/^\//, ''), element: <GamesPage /> },
-      { path: ROUTES.dreamStore.replace(/^\//, ''), element: <DreamStorePage /> },
+      { path: ROUTES.redemption.replace(/^\//, ''), element: <RedemptionPage /> },
       { path: ROUTES.wallet.replace(/^\//, ''), element: <WalletPage /> },
       { path: ROUTES.network.replace(/^\//, ''), element: <NetworkPage /> },
       { path: ROUTES.earnings.replace(/^\//, ''), element: <EarningsPage /> },

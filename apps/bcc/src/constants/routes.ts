@@ -19,6 +19,7 @@ export const ROUTES = {
   currencies: '/currencies',
   commission: '/commission',
   rewards: '/rewards',
+  redemptionRequests: '/redemption-requests',
   dreamStore: '/dream-store',
   campaigns: '/campaigns',
   notifications: '/notifications',

@@ -320,3 +320,16 @@ export const partnerRequestStatus = pgEnum('partner_request_status', [
   'APPROVED',
   'REJECTED',
 ]);
+
+/**
+ * Member points-redemption request lifecycle (P2). PENDING is the only actionable
+ * state; APPROVED/REJECTED are terminal. A REJECTED member may submit a new
+ * request (a fresh PENDING row) — the partial unique index only forbids two
+ * concurrent PENDING rows per member. Points are debited only on APPROVED (no
+ * hold while PENDING).
+ */
+export const redemptionRequestStatus = pgEnum('redemption_request_status', [
+  'PENDING',
+  'APPROVED',
+  'REJECTED',
+]);

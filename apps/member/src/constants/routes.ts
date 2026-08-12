@@ -2,9 +2,10 @@
  * Central route path registry. Route definitions and navigation reference these
  * constants so paths are declared in exactly one place.
  *
- * The member navigation is intentionally limited to Home, Games, Dream Store,
- * Wallet and Profile. Other member feature pages remain in the codebase but are
- * no longer routed from the portal.
+ * The member navigation is intentionally limited to Home, Games, Redeem, Wallet
+ * and Profile. Other member feature pages remain in the codebase but are no
+ * longer routed from the portal (the Dream Store page code is retained but not
+ * navigable — P2).
  */
 export const ROUTES = {
   home: '/',
@@ -16,7 +17,7 @@ export const ROUTES = {
   resetPassword: '/reset-password',
   changePassword: '/change-password',
   games: '/games',
-  dreamStore: '/dream-store',
+  redemption: '/redeem',
   wallet: '/wallet',
   network: '/network',
   earnings: '/earnings',

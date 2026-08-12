@@ -18,6 +18,7 @@ import { registerNetworkModule } from '@/modules/network';
 import { registerNotificationsModule } from '@/modules/notifications';
 import { registerPartnerRequestsModule } from '@/modules/partner-requests';
 import { registerRbacModule } from '@/modules/rbac';
+import { registerRedemptionRequestsModule } from '@/modules/redemption-requests';
 import { registerReportsModule } from '@/modules/reports';
 import { registerRewardsModule } from '@/modules/rewards';
 import { registerSettingsModule } from '@/modules/settings';
@@ -85,6 +86,7 @@ export function registerRoutes(app: FastifyInstance): void {
   const financeModule = registerFinanceModule(app);
   registerNetworkModule(app);
   registerPartnerRequestsModule(app);
+  registerRedemptionRequestsModule(app);
   const earningsModule = registerEarningsModule(app);
 
   // --- Deposit approval → earnings orchestration ------------------------------

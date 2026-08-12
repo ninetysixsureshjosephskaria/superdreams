@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { SidebarNav } from './SidebarNav';
 
-const NAV_LABELS = ['Home', 'Games', 'Dream Store', 'Wallet', 'Profile'];
+const NAV_LABELS = ['Home', 'Games', 'Redeem', 'Wallet', 'Profile'];
 
 const REMOVED_LABELS = ['Rewards', 'Campaigns', 'Notifications', 'Statements', 'Support'];
 

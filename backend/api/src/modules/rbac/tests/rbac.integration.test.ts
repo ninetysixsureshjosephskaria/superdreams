@@ -143,6 +143,36 @@ describe('rbac module (PGlite)', () => {
     expect(resolved.permissionKeys).not.toContain(PERMISSIONS.NETWORK_READ);
   });
 
+  it('P2: admin resolves redemption.request.* ; member/partner do not; super-admin does via *', async () => {
+    const adminUser = await createUser('p2-admin@authz.test');
+    await rbac.roles.assignRoleToUser(await roleId(ROLES.ADMIN), adminUser, null);
+    for (const perm of [
+      PERMISSIONS.REDEMPTION_REQUEST_READ,
+      PERMISSIONS.REDEMPTION_REQUEST_APPROVE,
+      PERMISSIONS.REDEMPTION_REQUEST_REJECT,
+    ]) {
+      expect(await rbac.authorization.hasPermission(adminUser, perm)).toBe(true);
+    }
+
+    const memberUser = await createUser('p2-member@authz.test');
+    await rbac.roles.assignRoleToUser(await roleId(ROLES.MEMBER), memberUser, null);
+    const partnerUser = await createUser('p2-partner@authz.test');
+    await rbac.roles.assignRoleToUser(await roleId(ROLES.PARTNER), partnerUser, null);
+    for (const perm of [
+      PERMISSIONS.REDEMPTION_REQUEST_APPROVE,
+      PERMISSIONS.REDEMPTION_REQUEST_REJECT,
+    ]) {
+      expect(await rbac.authorization.hasPermission(memberUser, perm)).toBe(false);
+      expect(await rbac.authorization.hasPermission(partnerUser, perm)).toBe(false);
+    }
+
+    const superUser = await createUser('p2-super@authz.test');
+    await rbac.roles.assignRoleToUser(await roleId(ROLES.SUPER_ADMIN), superUser, null);
+    expect(
+      await rbac.authorization.hasPermission(superUser, PERMISSIONS.REDEMPTION_REQUEST_APPROVE),
+    ).toBe(true);
+  });
+
   it('rejects duplicate role assignment and unknown role/user', async () => {
     const userId = await createUser('dup@rbac.test');
     const superAdminId = await roleId(ROLES.SUPER_ADMIN);

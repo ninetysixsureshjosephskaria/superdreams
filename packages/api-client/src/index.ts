@@ -336,6 +336,16 @@ export type {
   PaginatedGameHistory,
   GameHistoryParams,
 } from './games';
+export { createRedemptionRequestsApi } from './redemption-requests';
+export type {
+  RedemptionRequestsApi,
+  RedemptionRequestStatus,
+  RedemptionRequestData,
+  PaginatedRedemptionRequests,
+  SubmitRedemptionRequestInput,
+  ListRedemptionRequestsParams,
+  RedemptionRejectInput,
+} from './redemption-requests';
 export { createNetworkApi } from './network';
 export type {
   NetworkApi,

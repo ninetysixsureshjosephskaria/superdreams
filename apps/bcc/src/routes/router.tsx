@@ -21,6 +21,9 @@ const MemberEditPage = lazy(() => import('@/features/members/pages/MemberEditPag
 const WalletsListPage = lazy(() => import('@/features/wallets/pages/WalletsListPage'));
 const FinanceDashboardPage = lazy(() => import('@/features/finance/pages/FinanceDashboardPage'));
 const FinanceQueuePage = lazy(() => import('@/features/finance/pages/FinanceQueuePage'));
+const RedemptionQueuePage = lazy(
+  () => import('@/features/redemption-requests/pages/RedemptionQueuePage'),
+);
 const NetworkPage = lazy(() => import('@/features/network/pages/NetworkPage'));
 const FinanceLimitsPage = lazy(() => import('@/features/finance/pages/FinanceLimitsPage'));
 const CurrenciesPage = lazy(() => import('@/features/currencies/pages/CurrenciesPage'));
@@ -166,6 +169,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute permission="finance.read">
             <FinanceQueuePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'redemption-requests',
+        element: (
+          <ProtectedRoute permission="redemption.request.read">
+            <RedemptionQueuePage />
           </ProtectedRoute>
         ),
       },

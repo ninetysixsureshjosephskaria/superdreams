@@ -419,6 +419,53 @@ export class RewardService {
     });
   }
 
+  /**
+   * Redeems (DEBIT/REDEEM) member points **within an existing transaction**, and
+   * additionally records a completed `reward_redemptions` row — the same in-tx
+   * work `redeem()` does (applyTransaction → redemptions.create → setRedemptionId),
+   * minus the post-commit wallet-bridge/history/event. This lets the P2
+   * redemption-request approval debit points AND create the completed redemption
+   * record atomically inside the approval transaction, reusing the existing
+   * transaction-aware ledger primitives. It NEVER touches the wallet/money bridge
+   * (points-only). Throws `BusinessRuleError` if the balance is insufficient (the
+   * caller's transaction then rolls back). `redeem()` is intentionally left
+   * unchanged (preserve-first); this is an additive sibling.
+   */
+  public async redeemWithin(
+    tx: Executor,
+    memberId: string,
+    points: number,
+    options: { reference: string; note?: string | null; actor: RewardActor },
+  ): Promise<{ redemptionId: string; transactionId: string; balanceAfter: number }> {
+    const applied = await this.applyTransaction(tx, {
+      memberId,
+      type: 'REDEEM',
+      direction: 'DEBIT',
+      points,
+      reference: options.reference,
+      description: options.note ?? 'Points redeemed',
+      actor: options.actor,
+    });
+    const redemption = await this.redemptions.create(
+      {
+        memberId,
+        transactionId: applied.transactionId,
+        reference: options.reference,
+        points,
+        note: options.note ?? null,
+        walletTransactionId: null,
+        processedBy: options.actor.userId,
+      },
+      tx,
+    );
+    await this.transactions.setRedemptionId(applied.transactionId, redemption.id, tx);
+    return {
+      redemptionId: redemption.id,
+      transactionId: applied.transactionId,
+      balanceAfter: applied.balanceAfter,
+    };
+  }
+
   // --- Points operations -----------------------------------------------------
 
   public async allocate(

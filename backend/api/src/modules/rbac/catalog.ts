@@ -46,6 +46,11 @@ export const PERMISSIONS = {
   REWARD_ADJUST: 'reward.adjust',
   REWARD_EXPIRE: 'reward.expire',
 
+  // Member points-redemption requests (P2) — request/approval workflow.
+  REDEMPTION_REQUEST_READ: 'redemption.request.read',
+  REDEMPTION_REQUEST_APPROVE: 'redemption.request.approve',
+  REDEMPTION_REQUEST_REJECT: 'redemption.request.reject',
+
   // Campaign Management (Phase 16).
   CAMPAIGN_READ: 'campaign.read',
   CAMPAIGN_CREATE: 'campaign.create',
@@ -309,6 +314,24 @@ export const PERMISSION_DEFINITIONS: readonly PermissionDefinition[] = [
     resource: 'reward',
     action: 'expire',
     description: 'Run reward point expiry processing.',
+  },
+  {
+    key: PERMISSIONS.REDEMPTION_REQUEST_READ,
+    resource: 'redemption',
+    action: 'request.read',
+    description: 'List and view member points-redemption requests.',
+  },
+  {
+    key: PERMISSIONS.REDEMPTION_REQUEST_APPROVE,
+    resource: 'redemption',
+    action: 'request.approve',
+    description: 'Approve a member points-redemption request (debits the points).',
+  },
+  {
+    key: PERMISSIONS.REDEMPTION_REQUEST_REJECT,
+    resource: 'redemption',
+    action: 'request.reject',
+    description: 'Reject a member points-redemption request (no points are debited).',
   },
   {
     key: PERMISSIONS.CAMPAIGN_READ,
@@ -621,6 +644,10 @@ export const SYSTEM_ROLE_DEFINITIONS: readonly SystemRoleDefinition[] = [
       PERMISSIONS.PARTNER_REQUEST_READ,
       PERMISSIONS.PARTNER_REQUEST_APPROVE,
       PERMISSIONS.PARTNER_REQUEST_REJECT,
+      // Member points-redemption request management (P2).
+      PERMISSIONS.REDEMPTION_REQUEST_READ,
+      PERMISSIONS.REDEMPTION_REQUEST_APPROVE,
+      PERMISSIONS.REDEMPTION_REQUEST_REJECT,
     ],
   },
   {
