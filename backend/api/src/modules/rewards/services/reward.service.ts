@@ -73,6 +73,19 @@ export interface WalletBridge {
   creditMember(memberId: string, amountMinor: number, actor: RewardActor): Promise<string | null>;
 }
 
+/**
+ * Adapter to the Partner Referral module (P3). Invoked INSIDE the reversal
+ * transaction, after a source EARN has been flagged REVERSED, to atomically claw
+ * back any partner referral points derived from it. Implementations MUST be a
+ * no-op when the reversed transaction produced no referral earning, and MUST throw
+ * (aborting the whole reversal) when the clawback cannot be applied — e.g. the
+ * partner has insufficient points (B3: the non-negative invariant is preserved and
+ * no debt is created). Optional; when unset, reversals behave exactly as before.
+ */
+export interface PartnerReferralReversalPort {
+  onSourceReversed(tx: Executor, sourceTransactionId: string, actor: RewardActor): Promise<void>;
+}
+
 interface ApplyParams {
   memberId: string;
   type: RewardTransactionType;
@@ -119,6 +132,7 @@ export class RewardService {
     private readonly audit: RewardAuditRepository,
     private readonly events: RewardEventBus,
     private readonly walletBridge?: WalletBridge,
+    private readonly referralReversal?: PartnerReferralReversalPort,
   ) {}
 
   // --- Programs --------------------------------------------------------------
@@ -466,6 +480,119 @@ export class RewardService {
     };
   }
 
+  /**
+   * Awards (CREDIT/EARN) member points **within an existing transaction**,
+   * mirroring the in-transaction part of {@link allocate} (ledger + projection +
+   * audit) but WITHOUT its post-commit history/event tail — use
+   * {@link emitAllocated} for that. This lets the Campaign reward path credit a
+   * member AND the partner referral atomically inside one transaction (P3/A1),
+   * while {@link allocate} is left entirely unchanged for admin/manual allocation.
+   */
+  public async allocateWithin(
+    tx: Executor,
+    memberId: string,
+    options: {
+      points: number;
+      programId?: string | null;
+      ruleId?: string | null;
+      description?: string | null;
+      expiresAt?: Date | null;
+    },
+    actor: RewardActor,
+  ): Promise<{ transactionId: string; balanceAfter: number }> {
+    // Preserve allocate()'s NotFoundError for a missing member. The read goes
+    // through the caller's transaction executor (NOT a base-DB connection), so it
+    // is atomic with the allocation and cannot deadlock — throwing here rolls the
+    // whole enclosing transaction back before any ledger write, exactly as
+    // allocate()'s pre-transaction requireMember does (but without a FK error).
+    const member = await this.memberLookup.findById(memberId, tx);
+    if (!member) {
+      throw new NotFoundError('Member not found.');
+    }
+    return this.applyTransaction(tx, {
+      memberId,
+      type: 'EARN',
+      direction: 'CREDIT',
+      points: options.points,
+      reference: reference('RWD'),
+      description: options.description ?? null,
+      programId: options.programId ?? null,
+      ruleId: options.ruleId ?? null,
+      expiresAt: options.expiresAt ?? null,
+      actor,
+    });
+  }
+
+  /**
+   * Resolves a program's configured point-expiry (no per-allocation override) — a
+   * public, read-only wrapper over the same logic {@link allocate} runs BEFORE its
+   * transaction. The Campaign atomic-allocation path calls this pre-transaction so
+   * {@link allocateWithin} receives the exact `expiresAt` `allocate()` would have
+   * applied, preserving campaign reward-expiry behaviour unchanged.
+   */
+  public async resolveProgramExpiry(programId: string | null): Promise<Date | null> {
+    return this.resolveExpiry(programId, undefined);
+  }
+
+  /**
+   * Reverses a POSTED EARN/REDEEM/ADJUSTMENT entry **within an existing
+   * transaction** — the tx-aware sibling of {@link reverse} (which owns its own
+   * transaction plus post-commit history/event). Appends a compensating REVERSAL,
+   * flags the original REVERSED, mirrors the redemption-reversal marker, and
+   * audits — all through the passed executor. Used to claw back a partner referral
+   * EARN inside the source-reversal transaction (P3.11). Because the compensating
+   * entry runs through {@link applyTransaction}, a clawback that would drive the
+   * partner negative throws `BusinessRuleError` and rolls back the enclosing
+   * transaction (B3). `reverse()` is intentionally left unchanged (preserve-first).
+   */
+  public async reverseWithin(
+    tx: Executor,
+    memberId: string,
+    transactionId: string,
+    actor: RewardActor,
+  ): Promise<{ transactionId: string; balanceAfter: number }> {
+    const original = await this.transactions.findById(transactionId, tx);
+    if (!original || original.memberId !== memberId) {
+      throw new NotFoundError('Reward transaction not found.');
+    }
+    if (original.status === 'REVERSED') {
+      throw new BusinessRuleError('Transaction has already been reversed.');
+    }
+    if (!['EARN', 'REDEEM', 'ADJUSTMENT'].includes(original.type)) {
+      throw new BusinessRuleError('Only earn, redeem and adjustment entries can be reversed.');
+    }
+    const applied = await this.applyTransaction(tx, {
+      memberId,
+      type: 'REVERSAL',
+      direction: oppositeDirection(original.direction),
+      points: original.points,
+      reference: reference('REV'),
+      description: `Reversal of ${original.reference}`,
+      reversalOfId: original.id,
+      actor,
+    });
+    await this.transactions.markReversed(original.id, tx);
+    if (original.redemptionId) {
+      await this.redemptions.markReversed(original.redemptionId, tx);
+    }
+    await this.audit.write(
+      {
+        entityType: 'reward_transaction',
+        entityId: original.id,
+        action: 'UPDATE',
+        oldValue: { status: 'POSTED' },
+        newValue: { status: 'REVERSED', reversalId: applied.transactionId },
+        userId: actor.userId,
+        ipAddress: actor.ipAddress,
+        userAgent: actor.userAgent,
+        module: MODULE,
+        correlationId: actor.correlationId,
+      },
+      tx,
+    );
+    return applied;
+  }
+
   // --- Points operations -----------------------------------------------------
 
   public async allocate(
@@ -509,6 +636,38 @@ export class RewardService {
       at: new Date(),
     });
     return this.requireTransaction(result.transactionId);
+  }
+
+  /**
+   * Emits the post-commit side effects of an allocation — the reward-history entry
+   * and the `RewardAllocated` event — reproducing the tail of {@link allocate}.
+   * Paired with {@link allocateWithin} so the Campaign path can reproduce
+   * `allocate()`'s full observable behaviour (in-tx ledger + post-commit
+   * history/event) while additionally crediting the partner referral atomically.
+   * Call AFTER the enclosing transaction commits.
+   */
+  public async emitAllocated(
+    memberId: string,
+    transactionId: string,
+    points: number,
+    programId: string | null,
+    actor: RewardActor,
+  ): Promise<void> {
+    await this.history.record({
+      memberId,
+      action: 'reward.allocated',
+      description: `Earned ${points} points`,
+      actorId: actor.userId,
+    });
+    await this.events.publish({
+      type: 'RewardAllocated',
+      memberId,
+      transactionId,
+      points,
+      programId: programId ?? null,
+      actorId: actor.userId,
+      at: new Date(),
+    });
   }
 
   public async redeem(
@@ -660,6 +819,11 @@ export class RewardService {
       if (original.redemptionId) {
         await this.redemptions.markReversed(original.redemptionId, tx);
       }
+      // P3: atomically claw back any partner referral points derived from this
+      // source EARN. No-op when there is no linked referral earning (the port is
+      // optional and unset for compositions that don't wire it); throws — rolling
+      // back this entire reversal — when the partner has insufficient points (B3).
+      await this.referralReversal?.onSourceReversed(tx, original.id, actor);
       await this.audit.write(
         {
           entityType: 'reward_transaction',

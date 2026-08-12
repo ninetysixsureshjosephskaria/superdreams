@@ -23,6 +23,7 @@ export * from './profit';
 export * from './bonus';
 export * from './activation';
 export * from './rewards';
+export * from './partner-referral';
 export * from './campaigns';
 export * from './notifications';
 export * from './reports';

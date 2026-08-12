@@ -5,6 +5,7 @@ import { buildPaginatedResult } from '@/database/helpers';
 import { withTransaction } from '@/database/helpers/transaction';
 import type { Executor } from '@/database/types';
 import { BusinessRuleError, NotFoundError } from '@/errors';
+import type { PartnerReferralService } from '@/modules/partner-referral';
 import type { RewardService } from '@/modules/rewards';
 
 import type { GameActor, GameData, PaginatedHistory, PlayResult, ScoreResult } from '../dto';
@@ -39,6 +40,7 @@ export class GameService {
     private readonly audit: GameAuditRepository,
     private readonly rewards: RewardService,
     private readonly events: GameEventBus,
+    private readonly partnerReferral?: PartnerReferralService,
   ) {}
 
   public async listGames(): Promise<GameData[]> {
@@ -111,6 +113,13 @@ export class GameService {
     const memberId = await this.requireMemberId(userId);
     const data = submitScoreSchema.parse(input);
 
+    // P3: resolve the earner's eligible direct Partner BEFORE the transaction
+    // (reads only — the earning transaction performs writes exclusively, which
+    // keeps every read off the transaction's single connection).
+    const resolvedPartner = this.partnerReferral
+      ? await this.partnerReferral.resolveEarner(memberId)
+      : null;
+
     const outcome = await withTransaction(this.db, async (tx) => {
       const session = await this.sessions.lockById(sessionId, tx);
       if (!session || session.memberId !== memberId) {
@@ -144,6 +153,18 @@ export class GameService {
         });
         rewardTransactionId = award.transactionId;
         balanceAfter = award.balanceAfter;
+        // P3: credit the member's direct active Partner their referral share in
+        // THIS SAME transaction (no-op when there is no eligible partner or the
+        // floored result is 0). Any failure here rolls back the member's win too.
+        if (this.partnerReferral) {
+          await this.partnerReferral.creditWithin(tx, {
+            resolved: resolvedPartner,
+            sourceTransactionId: award.transactionId,
+            earnerMemberId: memberId,
+            sourcePoints: points,
+            actor,
+          });
+        }
       }
       await this.sessions.recordReward(
         { sessionId, gameId: game.id, memberId, points, rewardTransactionId },

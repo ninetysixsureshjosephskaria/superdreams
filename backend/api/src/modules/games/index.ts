@@ -3,8 +3,14 @@ import type { FastifyInstance } from 'fastify';
 import type { Database } from '@/database';
 import { createAuthModule } from '@/modules/auth';
 import { createAuthenticate } from '@/modules/auth/middleware';
+import {
+  createPartnerReferralModule,
+  partnerReferralDeps,
+  type PartnerReferralService,
+} from '@/modules/partner-referral';
 import { createRbacModule, type GuardDeps } from '@/modules/rbac';
 import { createRewardsModule, type RewardService } from '@/modules/rewards';
+import { createSettingsModule } from '@/modules/settings';
 
 import { GameEventBus } from './events';
 import { GameAuditRepository, GameRepository, SessionRepository } from './repositories';
@@ -19,7 +25,11 @@ export interface GamesModule {
 /** Composition root for the Games module. Entry/reward points reuse the Rewards ledger. */
 export function createGamesModule(
   db: Database,
-  options: { events?: GameEventBus; rewards?: RewardService } = {},
+  options: {
+    events?: GameEventBus;
+    rewards?: RewardService;
+    partnerReferral?: PartnerReferralService;
+  } = {},
 ): GamesModule {
   const events = options.events ?? new GameEventBus();
   const rewards = options.rewards ?? createRewardsModule(db).service;
@@ -30,6 +40,7 @@ export function createGamesModule(
     new GameAuditRepository(),
     rewards,
     events,
+    options.partnerReferral,
   );
   return { events, service };
 }
@@ -40,14 +51,26 @@ export function createGamesModule(
  * service for atomic point movements when charging entry and awarding wins.
  */
 export function registerGamesModule(app: FastifyInstance): GamesModule {
-  const module = createGamesModule(app.db);
+  const rbac = createRbacModule(app.db, { redis: app.redis });
+  const settings = createSettingsModule(app.db);
+  const rewards = createRewardsModule(app.db).service;
+  // P3: the Games earning path credits the member's direct active Partner in the
+  // same transaction as the win. Shares this rewards instance so the partner credit
+  // reuses the same ledger seam.
+  const partnerReferral = createPartnerReferralModule(
+    app.db,
+    partnerReferralDeps(rewards, { authorization: rbac.authorization, settings: settings.service }),
+  );
+  const module = createGamesModule(app.db, {
+    rewards,
+    partnerReferral: partnerReferral.service,
+  });
 
   const authModule = createAuthModule(app.db);
   const authenticate = createAuthenticate({
     tokens: authModule.tokens,
     sessions: authModule.sessions,
   });
-  const rbac = createRbacModule(app.db, { redis: app.redis });
   const guardDeps: GuardDeps = { authorization: rbac.authorization, events: rbac.events };
 
   registerGameRoutes(app, { service: module.service, authenticate, guardDeps });
