@@ -2,7 +2,7 @@ import axios from 'axios';
 
 import { env } from '@/constants';
 import { useSessionStore } from '@/store';
-import { createApiClient, createAuthApi } from '@superdreams/api-client';
+import { createApiClient, createAuthApi, createNetworkApi } from '@superdreams/api-client';
 
 /**
  * Refreshes the access token out-of-band (bare axios, so it never re-enters the
@@ -40,3 +40,11 @@ export const apiClient = createApiClient({
 
 /** Authentication API bound to the portal's configured client. */
 export const authApi = createAuthApi(apiClient);
+
+/**
+ * Network / invites API bound to the portal's configured client. Used by the
+ * public invitation-based onboarding flow (JoinPage). When the caller is
+ * unauthenticated no bearer token is attached, which is correct for the public
+ * `POST /api/v1/invites/:code/register` endpoint.
+ */
+export const networkApi = createNetworkApi(apiClient);

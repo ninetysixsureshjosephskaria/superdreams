@@ -21,6 +21,21 @@ function actorFrom(request: FastifyRequest): NetworkActor {
   };
 }
 
+/**
+ * Request context WITHOUT an authenticated user — for the public invite-registration
+ * endpoint, whose caller has no account yet. The service fills in the `userId` of
+ * the account it creates.
+ */
+function publicContextFrom(request: FastifyRequest): Omit<NetworkActor, 'userId'> {
+  const userAgent = request.headers['user-agent'];
+  const requestId = request.requestContext?.requestId;
+  return {
+    ipAddress: request.ip.length > 0 ? request.ip : null,
+    userAgent: typeof userAgent === 'string' ? userAgent : null,
+    correlationId: requestId && UUID_RE.test(requestId) ? requestId : null,
+  };
+}
+
 /** HTTP boundary for Network / referrals / invites. Validation lives in the services (Zod). */
 export class NetworkController {
   public constructor(
@@ -78,6 +93,20 @@ export class NetworkController {
     reply: FastifyReply,
   ): Promise<FastifyReply> => {
     return sendSuccess(reply, await this.invites.create(request.body, actorFrom(request)), 201);
+  };
+
+  // --- Invitation-based onboarding (public — the invite is the credential) -----
+
+  public registerWithInvite = async (
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<FastifyReply> => {
+    const { code } = inviteCodeParamsSchema.parse(request.params);
+    return sendSuccess(
+      reply,
+      await this.invites.registerWithInvite(code, request.body, publicContextFrom(request)),
+      201,
+    );
   };
 
   public listInvites = async (

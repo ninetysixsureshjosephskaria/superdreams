@@ -12,6 +12,7 @@ export const ROUTES = {
   dashboard: '/',
   login: '/login',
   signup: '/signup',
+  join: '/join',
   activate: '/activate',
   forgotPassword: '/forgot-password',
   resetPassword: '/reset-password',

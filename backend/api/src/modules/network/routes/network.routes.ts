@@ -63,6 +63,35 @@ const listInvitesSchema: FastifySchema = {
 
 const codeOnlySchema: FastifySchema = { tags: ['Invites'], security: secured, params: codeParams };
 
+// Public (no `security`): minimal, non-sensitive invite context (role/status/valid)
+// for the join page, which is reached by an unauthenticated invitee. The invite
+// code is unguessable, so exposing its role/validity to a holder leaks nothing.
+const previewInviteSchema: FastifySchema = {
+  tags: ['Invites'],
+  summary: 'Preview an invitation (public — role, status and validity only)',
+  params: codeParams,
+};
+
+// Public (no `security`): invitation-based onboarding. The secure invite code is
+// the authorization — no email verification round-trip. Public self-registration
+// (POST /auth/register) is a separate, unchanged, email-verified flow.
+const registerWithInviteSchema: FastifySchema = {
+  tags: ['Invites'],
+  summary: 'Register and activate an account via an invitation (no email verification)',
+  params: codeParams,
+  body: {
+    type: 'object',
+    required: ['email', 'password', 'firstName', 'lastName'],
+    additionalProperties: false,
+    properties: {
+      email: { type: 'string', format: 'email' },
+      password: { type: 'string', minLength: 1 },
+      firstName: { type: 'string', minLength: 1, maxLength: 100 },
+      lastName: { type: 'string', minLength: 1, maxLength: 100 },
+    },
+  },
+};
+
 export interface RegisterNetworkRoutesOptions {
   network: NetworkService;
   invites: InviteService;
@@ -135,15 +164,19 @@ export function registerNetworkRoutes(
         controller.listInvites,
       );
       // Static/suffix routes before the bare `/:code` read.
-      instance.get(
-        '/:code/preview',
-        { schema: codeOnlySchema, preHandler: authed },
-        controller.previewInvite,
-      );
+      // Public: the join page previews the invite (role/status/validity) before
+      // the unauthenticated invitee registers. Non-sensitive payload only.
+      instance.get('/:code/preview', { schema: previewInviteSchema }, controller.previewInvite);
       instance.post(
         '/:code/accept',
         { schema: codeOnlySchema, preHandler: authed },
         controller.acceptInvite,
+      );
+      // Public: no preHandler — the invite code itself authorizes activation.
+      instance.post(
+        '/:code/register',
+        { schema: registerWithInviteSchema },
+        controller.registerWithInvite,
       );
       instance.post(
         '/:code/revoke',

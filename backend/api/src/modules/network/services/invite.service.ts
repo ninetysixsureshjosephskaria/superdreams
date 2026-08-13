@@ -27,6 +27,17 @@ export interface RoleAssignerPort {
   assignRoleByKey(userId: string, roleKey: string): Promise<void>;
 }
 
+/**
+ * Provisions a fully-activated (email-verified) account for an invited user,
+ * satisfied in composition by the Auth module's existing register → verifyEmail
+ * flow. The secure, single-use invite is the authorization, so no email round-trip
+ * is required. Public self-registration is unaffected — it never uses this port and
+ * still requires email verification.
+ */
+export interface InvitedAccountProvisionerPort {
+  provisionVerifiedAccount(input: unknown): Promise<{ userId: string }>;
+}
+
 function toInvite(row: InviteRow): InviteData {
   const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
   return {
@@ -63,6 +74,7 @@ export class InviteService {
     private readonly audit: NetworkAuditRepository,
     private readonly events: NetworkEventBus,
     private readonly roleAssigner: RoleAssignerPort,
+    private readonly provisioner?: InvitedAccountProvisionerPort,
   ) {}
 
   public async create(input: unknown, actor: NetworkActor): Promise<InviteData> {
@@ -319,6 +331,43 @@ export class InviteService {
       });
     }
     return toInvite(result.invite);
+  }
+
+  /**
+   * Invitation-based onboarding (MVP, no email provider). Creates AND activates an
+   * account for a NEW invited user, then accepts the invite — all authorized by the
+   * secure, single-use, expiring invite, which serves as the activation credential
+   * (no email-verification round-trip). The invite is validated BEFORE any account
+   * is created, so an invalid / expired / already-used invite never provisions an
+   * account. Public self-registration is unchanged and still requires email
+   * verification. A PARTNER invite yields the existing `partner` role; a MEMBER
+   * invite with `assignedPartnerId` establishes the member → direct Partner
+   * relationship — both via the existing {@link accept} (single-use enforced there).
+   */
+  public async registerWithInvite(
+    code: string,
+    input: unknown,
+    context: Omit<NetworkActor, 'userId'>,
+  ): Promise<InviteData> {
+    if (!this.provisioner) {
+      throw new BusinessRuleError('Invitation-based registration is not configured.');
+    }
+    // Validate the invite up front — never create an account for a bad invite.
+    const invite = await this.invites.findByCode(code);
+    if (!invite) {
+      throw new NotFoundError('Invite not found.');
+    }
+    if (invite.status !== 'PENDING') {
+      throw new ConflictError('This invite is no longer available.');
+    }
+    if (invite.expiresAt && invite.expiresAt.getTime() <= Date.now()) {
+      throw new BusinessRuleError('This invite has expired.');
+    }
+
+    // Provision + activate the account (auth register → verifyEmail), then accept
+    // as the new user. `accept` re-locks the invite and enforces single-use.
+    const { userId } = await this.provisioner.provisionVerifiedAccount(input);
+    return this.accept(code, userId, { userId, ...context });
   }
 
   private ctx(

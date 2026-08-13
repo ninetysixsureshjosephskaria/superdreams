@@ -19,6 +19,7 @@ import { registerNetworkRoutes } from './routes';
 import {
   InviteService,
   NetworkService,
+  type InvitedAccountProvisionerPort,
   type RoleAssignerPort,
   type UnitsProviderPort,
 } from './services';
@@ -36,6 +37,8 @@ export interface NetworkModule {
 export interface NetworkModuleDeps {
   units: UnitsProviderPort;
   roleAssigner: RoleAssignerPort;
+  /** Auth-backed account provisioner enabling invitation-based onboarding (M1a). */
+  provisioner?: InvitedAccountProvisionerPort;
   events?: NetworkEventBus;
 }
 
@@ -56,6 +59,7 @@ export function createNetworkModule(db: Database, deps: NetworkModuleDeps): Netw
     audit,
     events,
     deps.roleAssigner,
+    deps.provisioner,
   );
 
   return { events, network, invites, repositories: { invites: inviteRepo, network: networkRepo } };
@@ -66,7 +70,10 @@ export function createNetworkModule(db: Database, deps: NetworkModuleDeps): Netw
  * balance for the network view), the RBAC module (permission guards + idempotent
  * role assignment on invite acceptance), and the Auth module (authenticate).
  */
-export function registerNetworkModule(app: FastifyInstance): NetworkModule {
+export function registerNetworkModule(
+  app: FastifyInstance,
+  deps: { provisioner?: InvitedAccountProvisionerPort } = {},
+): NetworkModule {
   const walletModule = createWalletModule(app.db);
   const authModule = createAuthModule(app.db);
   const authenticate = createAuthenticate({
@@ -103,7 +110,11 @@ export function registerNetworkModule(app: FastifyInstance): NetworkModule {
     },
   };
 
-  const module = createNetworkModule(app.db, { units, roleAssigner });
+  const module = createNetworkModule(app.db, {
+    units,
+    roleAssigner,
+    ...(deps.provisioner ? { provisioner: deps.provisioner } : {}),
+  });
   registerNetworkRoutes(app, {
     network: module.network,
     invites: module.invites,
@@ -116,7 +127,11 @@ export function registerNetworkModule(app: FastifyInstance): NetworkModule {
 export { NetworkEventBus } from './events';
 export type { NetworkEvent, NetworkEventType, NetworkEventHandler } from './events';
 export { NetworkService, InviteService } from './services';
-export type { UnitsProviderPort, RoleAssignerPort } from './services';
+export type {
+  UnitsProviderPort,
+  RoleAssignerPort,
+  InvitedAccountProvisionerPort,
+} from './services';
 export type {
   NetworkActor,
   InviteData,

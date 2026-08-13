@@ -90,6 +90,14 @@ export interface CreateInviteInput {
   expiresInDays?: number;
 }
 
+/** Body for invitation-based onboarding (M1a) — no email verification required. */
+export interface RegisterWithInviteInput {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
+
 export interface ListInvitesParams {
   page?: number;
   pageSize?: number;
@@ -122,6 +130,8 @@ export interface NetworkApi {
   listInvites(params?: ListInvitesParams): Promise<PaginatedInvites>;
   getInvite(code: string): Promise<Invite>;
   previewInvite(code: string): Promise<InvitePreview>;
+  /** Public: register + activate an account via an invitation (no email verification). */
+  registerWithInvite(code: string, input: RegisterWithInviteInput): Promise<Invite>;
   acceptInvite(code: string): Promise<Invite>;
   revokeInvite(code: string): Promise<Invite>;
   deleteInvite(code: string): Promise<{ code: string; deleted: boolean }>;
@@ -172,6 +182,10 @@ export function createNetworkApi(client: AxiosInstance): NetworkApi {
     },
     async previewInvite(code) {
       const response = await client.get<Envelope<InvitePreview>>(`${invites}/${code}/preview`);
+      return response.data.data;
+    },
+    async registerWithInvite(code, input) {
+      const response = await client.post<Envelope<Invite>>(`${invites}/${code}/register`, input);
       return response.data.data;
     },
     async acceptInvite(code) {

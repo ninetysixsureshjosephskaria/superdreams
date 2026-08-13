@@ -79,12 +79,24 @@ export function registerRoutes(app: FastifyInstance): void {
   authModule.registration.setCollaborators({ roleAssigner, memberProvisioner });
   authModule.emailVerification.setMemberProvisioner(memberProvisioner);
   authModule.auth.setAuthorizationReader(authorizationReader);
+
+  // Invitation-based onboarding (M1a): provisions AND activates an account for an
+  // invited user by reusing the now fully-wired register → verifyEmail flow — the
+  // secure invite is the authorization, so no email delivery is required. Public
+  // self-registration is untouched (it does not go through this adapter).
+  const invitedAccountProvisioner = {
+    provisionVerifiedAccount: async (input: unknown): Promise<{ userId: string }> => {
+      const registered = await authModule.registration.register(input);
+      await authModule.emailVerification.verifyEmail(registered.verificationToken);
+      return { userId: registered.userId };
+    },
+  };
   // ---------------------------------------------------------------------------
 
   registerWalletModule(app);
   registerCurrenciesModule(app);
   const financeModule = registerFinanceModule(app);
-  registerNetworkModule(app);
+  registerNetworkModule(app, { provisioner: invitedAccountProvisioner });
   registerPartnerRequestsModule(app);
   registerRedemptionRequestsModule(app);
   const earningsModule = registerEarningsModule(app);

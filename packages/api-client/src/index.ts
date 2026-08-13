@@ -359,5 +359,6 @@ export type {
   PartnerNetworkSummary,
   NetworkMemberDetail,
   CreateInviteInput,
+  RegisterWithInviteInput,
   ListInvitesParams,
 } from './network';

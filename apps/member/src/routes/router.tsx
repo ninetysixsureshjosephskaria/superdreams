@@ -22,6 +22,7 @@ const GamesPage = lazy(() => import('@/features/games/pages/GamesPage'));
 const RedemptionPage = lazy(() => import('@/features/redemption/pages/RedemptionPage'));
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));
 const SignUpPage = lazy(() => import('@/features/auth/pages/SignUpPage'));
+const JoinPage = lazy(() => import('@/features/auth/pages/JoinPage'));
 const ActivatePage = lazy(() => import('@/features/auth/pages/ActivatePage'));
 const ForgotPasswordPage = lazy(() => import('@/features/auth/pages/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('@/features/auth/pages/ResetPasswordPage'));
@@ -70,6 +71,11 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.signup.replace(/^\//, ''),
     element: lazyPage(<SignUpPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: ROUTES.join.replace(/^\//, ''),
+    element: lazyPage(<JoinPage />),
     errorElement: <RouteErrorPage />,
   },
   {
