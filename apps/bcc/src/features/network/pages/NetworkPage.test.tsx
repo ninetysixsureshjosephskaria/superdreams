@@ -108,16 +108,22 @@ describe('NetworkPage', () => {
     expect(await screen.findByText('ABCD1234')).toBeInTheDocument();
   });
 
-  it('creates an invite through the backend', async () => {
+  it('creates a member invite with the selected partner through the backend', async () => {
     renderPage();
     fireEvent.click(await screen.findByRole('tab', { name: 'Invites' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Create invite' }));
 
     const dialog = await screen.findByRole('dialog');
+    // A Member invite (the default role) now requires selecting a Partner.
+    const partnerSelect = await within(dialog).findByLabelText('Assigned partner');
+    fireEvent.change(partnerSelect, { target: { value: 'p-1' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Create invite' }));
 
     await waitFor(() => expect(networkApi.createInvite).toHaveBeenCalledTimes(1));
-    expect(networkApi.createInvite).toHaveBeenCalledWith({ role: 'MEMBER' });
+    expect(networkApi.createInvite).toHaveBeenCalledWith({
+      role: 'MEMBER',
+      assignedPartnerId: 'p-1',
+    });
     expect(await screen.findByText('NEW12345')).toBeInTheDocument();
   });
 

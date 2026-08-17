@@ -20,9 +20,20 @@ import type {
 import { networkApi } from './api';
 import { networkKeys } from './query-keys';
 
-/** All partners with their network summary (requires network.read). */
-export function usePartners(): UseQueryResult<PartnerNetworkSummary[], ApiError> {
-  return useQuery({ queryKey: networkKeys.partners(), queryFn: () => networkApi.listPartners() });
+/**
+ * All partners with their network summary (requires network.read). Pass
+ * `{ enabled: false }` to defer the fetch until it is actually needed (e.g. the
+ * Member-invite Partner selector only loads partners when a Member invite is
+ * being composed).
+ */
+export function usePartners(options?: {
+  enabled?: boolean;
+}): UseQueryResult<PartnerNetworkSummary[], ApiError> {
+  return useQuery({
+    queryKey: networkKeys.partners(),
+    queryFn: () => networkApi.listPartners(),
+    enabled: options?.enabled ?? true,
+  });
 }
 
 /** A single member's network node (relationships + counts + units). */
