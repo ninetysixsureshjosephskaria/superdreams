@@ -4,9 +4,18 @@ import { describe, expect, it } from 'vitest';
 
 import { SidebarNav } from './SidebarNav';
 
-const NAV_LABELS = ['Home', 'Games', 'Redeem', 'Wallet', 'Profile'];
+const NAV_LABELS = ['Home', 'Games', 'Redeem', 'Network', 'Profile'];
 
-const REMOVED_LABELS = ['Rewards', 'Campaigns', 'Notifications', 'Statements', 'Support'];
+// Wallet and Earnings are monetary and intentionally not navigable (points/rewards
+// product only); the others were never surfaced in the member nav.
+const REMOVED_LABELS = [
+  'Wallet',
+  'Earnings',
+  'Rewards',
+  'Campaigns',
+  'Notifications',
+  'Statements',
+];
 
 describe('SidebarNav', () => {
   it('renders every primary navigation item as a link', () => {
@@ -33,10 +42,10 @@ describe('SidebarNav', () => {
 
   it('highlights the active route', () => {
     render(
-      <MemoryRouter initialEntries={['/wallet']}>
+      <MemoryRouter initialEntries={['/network']}>
         <SidebarNav />
       </MemoryRouter>,
     );
-    expect(screen.getByRole('link', { name: 'Wallet' })).toHaveClass('bg-accent');
+    expect(screen.getByRole('link', { name: 'Network' })).toHaveClass('bg-accent');
   });
 });

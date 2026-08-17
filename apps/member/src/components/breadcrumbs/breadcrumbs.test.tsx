@@ -7,12 +7,12 @@ import { Breadcrumbs } from './Breadcrumbs';
 describe('Breadcrumbs', () => {
   it('builds a Home → module trail for a module route', () => {
     render(
-      <MemoryRouter initialEntries={['/wallet']}>
+      <MemoryRouter initialEntries={['/network']}>
         <Breadcrumbs />
       </MemoryRouter>,
     );
     expect(screen.getByRole('link', { name: 'Home' })).toBeInTheDocument();
-    expect(screen.getByText('Wallet')).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByText('Network')).toHaveAttribute('aria-current', 'page');
   });
 
   it('shows only Home at the root', () => {

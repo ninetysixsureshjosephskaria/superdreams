@@ -13,7 +13,6 @@ import {
   type DataTableColumn,
 } from '@superdreams/ui';
 
-import { formatMinor } from '../format';
 import { useReportDashboard, useSavedReports } from '../hooks';
 
 /** Analytics overview: KPI cards, recent activity and saved reports. */
@@ -79,20 +78,13 @@ export default function ReportsDashboardPage() {
         </Alert>
       ) : (
         <>
-          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               label="Members"
               value={
                 <span className="tabular-nums">{(kpis?.members.total ?? 0).toLocaleString()}</span>
               }
               hint={`${kpis?.members.active ?? 0} active`}
-            />
-            <StatCard
-              label="Wallet balance"
-              value={
-                <span className="tabular-nums">{formatMinor(kpis?.walletAvailableMinor ?? 0)}</span>
-              }
-              hint="Available across wallets"
             />
             <StatCard
               label="Reward points"

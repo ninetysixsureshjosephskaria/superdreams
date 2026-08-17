@@ -26,10 +26,10 @@ export function QuickActions() {
         </Button>
         <Button
           variant="outline"
-          leftIcon={<Icon name="wallet" size="sm" />}
-          onClick={() => navigate(ROUTES.wallet)}
+          leftIcon={<Icon name="users" size="sm" />}
+          onClick={() => navigate(ROUTES.network)}
         >
-          Wallet
+          Network
         </Button>
         <Button
           variant="outline"

@@ -3,15 +3,14 @@ import { Helmet } from 'react-helmet-async';
 import {
   LatestNotifications,
   QuickActions,
-  RecentTransactions,
+  RecentRewardActivity,
   RewardsSummaryCard,
-  WalletSummaryCard,
   WelcomeBanner,
 } from '@/components/dashboard';
 import { PageHeader } from '@/components/page-header';
 import { ContentCard, EmptyState } from '@superdreams/ui';
 
-/** Member home dashboard. Live overview backed by the member's wallet, rewards and inbox. */
+/** Member home dashboard. Live overview backed by the member's rewards and inbox. */
 export default function DashboardPage() {
   return (
     <>
@@ -23,15 +22,14 @@ export default function DashboardPage() {
       <div className="space-y-6">
         <WelcomeBanner />
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <WalletSummaryCard />
+        <div className="grid gap-4 md:grid-cols-2">
           <RewardsSummaryCard />
           <QuickActions />
         </div>
 
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <RecentTransactions />
+            <RecentRewardActivity />
           </div>
           <div className="space-y-4">
             <LatestNotifications />

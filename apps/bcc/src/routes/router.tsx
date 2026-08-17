@@ -18,23 +18,14 @@ const MembersListPage = lazy(() => import('@/features/members/pages/MembersListP
 const MemberDetailsPage = lazy(() => import('@/features/members/pages/MemberDetailsPage'));
 const MemberCreatePage = lazy(() => import('@/features/members/pages/MemberCreatePage'));
 const MemberEditPage = lazy(() => import('@/features/members/pages/MemberEditPage'));
-const WalletsListPage = lazy(() => import('@/features/wallets/pages/WalletsListPage'));
-const FinanceDashboardPage = lazy(() => import('@/features/finance/pages/FinanceDashboardPage'));
-const FinanceQueuePage = lazy(() => import('@/features/finance/pages/FinanceQueuePage'));
+// Monetary features (wallets, finance, currencies, commission, profit, bonus,
+// activation-bonus) are intentionally not routed — Super Dreams is a
+// points/rewards product with no user-facing currency/money UI. The feature
+// code and backend/APIs remain intact but are not reachable from the console.
 const RedemptionQueuePage = lazy(
   () => import('@/features/redemption-requests/pages/RedemptionQueuePage'),
 );
 const NetworkPage = lazy(() => import('@/features/network/pages/NetworkPage'));
-const FinanceLimitsPage = lazy(() => import('@/features/finance/pages/FinanceLimitsPage'));
-const CurrenciesPage = lazy(() => import('@/features/currencies/pages/CurrenciesPage'));
-const CommissionPage = lazy(() => import('@/features/commission/pages/CommissionPage'));
-const ProfitPage = lazy(() => import('@/features/profit/pages/ProfitPage'));
-const BonusCampaignsPage = lazy(() => import('@/features/bonus/pages/BonusCampaignsPage'));
-const ActivationBonusPage = lazy(
-  () => import('@/features/activation-bonus/pages/ActivationBonusPage'),
-);
-const WalletDetailsPage = lazy(() => import('@/features/wallets/pages/WalletDetailsPage'));
-const WalletCreatePage = lazy(() => import('@/features/wallets/pages/WalletCreatePage'));
 const RewardProgramsListPage = lazy(
   () => import('@/features/rewards/pages/RewardProgramsListPage'),
 );
@@ -133,46 +124,6 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'wallet',
-        element: (
-          <ProtectedRoute permission="wallet.read">
-            <WalletsListPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'wallet/new',
-        element: (
-          <ProtectedRoute permission="wallet.create">
-            <WalletCreatePage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'wallet/:id',
-        element: (
-          <ProtectedRoute permission="wallet.read">
-            <WalletDetailsPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'finance',
-        element: (
-          <ProtectedRoute permission="finance.read">
-            <FinanceDashboardPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'finance/queue',
-        element: (
-          <ProtectedRoute permission="finance.read">
-            <FinanceQueuePage />
-          </ProtectedRoute>
-        ),
-      },
-      {
         path: 'redemption-requests',
         element: (
           <ProtectedRoute permission="redemption.request.read">
@@ -181,58 +132,10 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'finance/limits',
-        element: (
-          <ProtectedRoute permission="finance.read">
-            <FinanceLimitsPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'finance/profit',
-        element: (
-          <ProtectedRoute permission="profit.schedule">
-            <ProfitPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'finance/bonus-campaigns',
-        element: (
-          <ProtectedRoute permission="bonus.manage">
-            <BonusCampaignsPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'finance/activation-bonus',
-        element: (
-          <ProtectedRoute permission="activation.bonus.manage">
-            <ActivationBonusPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
         path: 'network',
         element: (
           <ProtectedRoute permission="network.read">
             <NetworkPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'currencies',
-        element: (
-          <ProtectedRoute permission="currency.manage">
-            <CurrenciesPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'commission',
-        element: (
-          <ProtectedRoute permission="commission.manage">
-            <CommissionPage />
           </ProtectedRoute>
         ),
       },

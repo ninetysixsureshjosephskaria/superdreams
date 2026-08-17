@@ -15,9 +15,10 @@ function lazyPage(node: ReactNode): ReactNode {
 // Pages are code-split; layouts render a Suspense fallback while they load.
 const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'));
 const ProfilePage = lazy(() => import('@/features/profile/pages/ProfilePage'));
-const WalletPage = lazy(() => import('@/features/wallet/pages/WalletPage'));
 const NetworkPage = lazy(() => import('@/features/network/pages/NetworkPage'));
-const EarningsPage = lazy(() => import('@/features/earnings/pages/EarningsPage'));
+// The monetary Wallet and Earnings pages are intentionally not routed — Super
+// Dreams is a points/rewards product with no user-facing currency/money UI. The
+// feature code and backend/APIs remain intact but are not reachable in the portal.
 const GamesPage = lazy(() => import('@/features/games/pages/GamesPage'));
 const RedemptionPage = lazy(() => import('@/features/redemption/pages/RedemptionPage'));
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));
@@ -35,11 +36,12 @@ const NotFoundPage = lazy(() => import('@/pages/not-found/NotFoundPage'));
 /**
  * Application router.
  *
- * Navigation covers Home, Games, Redeem, Wallet, Network, Earnings and Profile
- * (see `navigation/nav-config.ts`). All are fully functional and backed by the
- * real API. Other member feature pages remain in the codebase but are
- * intentionally not routed here — the Dream Store page code is retained (backend
- * unchanged) but is not exposed in the Member Portal (P2).
+ * Navigation covers Home, Games, Redeem, Network and Profile (see
+ * `navigation/nav-config.ts`). All are fully functional and backed by the real
+ * API. Other member feature pages remain in the codebase but are intentionally
+ * not routed here — the Dream Store page code is retained (backend unchanged) but
+ * is not exposed in the Member Portal (P2); likewise the monetary Wallet and
+ * Earnings pages are retained but not routed (points/rewards product only).
  *
  * The member area is wrapped in {@link ProtectedRoute} (a mock guard in this
  * phase — no real authentication). Error pages live in the public layout so a
@@ -57,9 +59,7 @@ export const router = createBrowserRouter([
       { index: true, element: <DashboardPage /> },
       { path: ROUTES.games.replace(/^\//, ''), element: <GamesPage /> },
       { path: ROUTES.redemption.replace(/^\//, ''), element: <RedemptionPage /> },
-      { path: ROUTES.wallet.replace(/^\//, ''), element: <WalletPage /> },
       { path: ROUTES.network.replace(/^\//, ''), element: <NetworkPage /> },
-      { path: ROUTES.earnings.replace(/^\//, ''), element: <EarningsPage /> },
       { path: ROUTES.profile.replace(/^\//, ''), element: <ProfilePage /> },
     ],
   },

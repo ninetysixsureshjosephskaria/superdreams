@@ -9,7 +9,6 @@ import { SidebarNav } from './SidebarNav';
 const NAV_LABELS = [
   'Dashboard',
   'Members',
-  'Wallet',
   'Rewards',
   'Campaigns',
   'Notifications',
@@ -18,7 +17,10 @@ const NAV_LABELS = [
   'Settings',
 ];
 
-// Labels unique to section headers (excludes 'Finance', which also names a link).
+// The monetary "Finance" section (Wallet, Currencies, Commission, etc.) is not
+// exposed — Super Dreams is a points/rewards product.
+const REMOVED_LABELS = ['Finance', 'Wallet', 'Currencies', 'Commission'];
+
 const SECTION_LABELS = ['Overview', 'Members & Network', 'Engagement', 'Insights', 'System'];
 
 describe('SidebarNav', () => {
@@ -51,8 +53,18 @@ describe('SidebarNav', () => {
     for (const section of SECTION_LABELS) {
       expect(screen.getByText(section)).toBeInTheDocument();
     }
-    // 'Finance' appears as both a section header and a nav link.
-    expect(screen.getAllByText('Finance').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('does not expose any monetary/currency navigation', () => {
+    render(
+      <MemoryRouter>
+        <SidebarNav />
+      </MemoryRouter>,
+    );
+    for (const label of REMOVED_LABELS) {
+      expect(screen.queryByRole('link', { name: label })).not.toBeInTheDocument();
+      expect(screen.queryByText(label)).not.toBeInTheDocument();
+    }
   });
 
   it('highlights the active route', () => {
@@ -76,7 +88,8 @@ describe('SidebarNav', () => {
     expect(screen.getByRole('link', { name: 'Dream Store' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Members' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Settings' })).not.toBeInTheDocument();
-    // A section with all items gated out is dropped entirely.
-    expect(screen.queryByText('Finance')).not.toBeInTheDocument();
+    // A section with all items gated out is dropped entirely (Members & Network
+    // has no ungated items, unlike Engagement which keeps Dream Store).
+    expect(screen.queryByText('Members & Network')).not.toBeInTheDocument();
   });
 });

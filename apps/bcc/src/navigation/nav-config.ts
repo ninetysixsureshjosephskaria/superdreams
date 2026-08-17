@@ -39,61 +39,11 @@ export const PRIMARY_NAV_SECTIONS: NavSection[] = [
       },
     ],
   },
-  {
-    key: 'finance',
-    label: 'Finance',
-    items: [
-      {
-        key: 'finance',
-        label: 'Finance',
-        path: ROUTES.finance,
-        icon: 'receipt',
-        permission: 'finance.read',
-      },
-      {
-        key: 'wallet',
-        label: 'Wallet',
-        path: ROUTES.wallet,
-        icon: 'wallet',
-        permission: 'wallet.read',
-      },
-      {
-        key: 'currencies',
-        label: 'Currencies',
-        path: ROUTES.currencies,
-        icon: 'wallet',
-        permission: 'currency.manage',
-      },
-      {
-        key: 'commission',
-        label: 'Commission',
-        path: ROUTES.commission,
-        icon: 'bar-chart',
-        permission: 'commission.manage',
-      },
-      {
-        key: 'daily-profit',
-        label: 'Daily Profit',
-        path: ROUTES.financeProfit,
-        icon: 'calendar',
-        permission: 'profit.schedule',
-      },
-      {
-        key: 'bonus-campaigns',
-        label: 'Bonus Campaigns',
-        path: ROUTES.bonusCampaigns,
-        icon: 'megaphone',
-        permission: 'bonus.manage',
-      },
-      {
-        key: 'activation-bonus',
-        label: 'Activation Bonus',
-        path: ROUTES.activationBonus,
-        icon: 'gift',
-        permission: 'activation.bonus.manage',
-      },
-    ],
-  },
+  // The monetary "Finance" section (Finance, Wallet, Currencies, Commission,
+  // Daily Profit, Bonus Campaigns, Activation Bonus) is intentionally NOT
+  // surfaced: Super Dreams is a points/rewards product and does not expose
+  // currency/money UI. The feature code and backend/APIs remain intact but are
+  // not navigable from the admin console.
   {
     key: 'engagement',
     label: 'Engagement',
