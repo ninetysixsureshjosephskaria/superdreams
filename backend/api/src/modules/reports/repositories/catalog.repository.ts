@@ -1,10 +1,19 @@
-import { and, asc, desc, eq, ilike, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, notInArray, or, sql, type SQL } from 'drizzle-orm';
 
 import type { Database } from '@/database/client';
 import { normalizePagination, notDeleted } from '@/database/helpers';
 import { reportCategories, reportDefinitions } from '@/database/schema';
 
 import type { ListReportsQuery } from '../dto';
+
+/**
+ * Report sources that are NOT surfaced in the user-facing catalog. Super Dreams is
+ * a points/rewards product, so monetary reports (e.g. the WALLET summary) are never
+ * listed or filterable in the BCC Reports catalog. The underlying generators and
+ * projections stay intact and remain runnable by code / internal mechanisms
+ * (`findByCode` → `runReport`); only catalog discovery (`search`) is suppressed.
+ */
+const HIDDEN_CATALOG_SOURCES = ['WALLET'] as const;
 
 export interface DefinitionRow {
   id: string;
@@ -70,7 +79,12 @@ export class ReportCatalogRepository {
 
   public async search(query: ListReportsQuery): Promise<{ rows: DefinitionRow[]; total: number }> {
     const { limit, offset } = normalizePagination(query);
-    const conditions: SQL[] = [notDeleted(reportDefinitions.deletedAt)];
+    const conditions: SQL[] = [
+      notDeleted(reportDefinitions.deletedAt),
+      // Monetary reports are never discoverable through the catalog (points/rewards
+      // product). Applied to both the page and the total so counts stay accurate.
+      notInArray(reportDefinitions.source, [...HIDDEN_CATALOG_SOURCES]),
+    ];
     if (query.search) {
       const term = `%${query.search}%`;
       const match = or(

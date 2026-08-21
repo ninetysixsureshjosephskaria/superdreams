@@ -156,9 +156,21 @@ describe('reports module (PGlite)', () => {
 
   it('lists seeded report definitions with their categories', async () => {
     const page = await mod.service.listReports({});
-    expect(page.total).toBeGreaterThanOrEqual(7);
+    expect(page.total).toBeGreaterThanOrEqual(6);
     const members = page.items.find((d) => d.code === 'MEMBERS_SUMMARY');
     expect(members?.categoryCode).toBe('OPERATIONAL');
+  });
+
+  it('never surfaces the monetary WALLET report in the user-facing catalog', async () => {
+    // Points/rewards product: the WALLET summary is not listed, and an explicit
+    // source=WALLET filter returns nothing — the report is undiscoverable here.
+    const all = await mod.service.listReports({});
+    expect(all.items.find((d) => d.code === 'WALLET_SUMMARY')).toBeUndefined();
+    expect(all.items.some((d) => d.source === 'WALLET')).toBe(false);
+
+    const filtered = await mod.service.listReports({ source: 'WALLET' });
+    expect(filtered.items).toHaveLength(0);
+    expect(filtered.total).toBe(0);
   });
 
   it('runs the members summary with correct aggregates', async () => {

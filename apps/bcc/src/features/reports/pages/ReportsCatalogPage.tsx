@@ -18,10 +18,11 @@ import { useReportDefinitions } from '../hooks';
 
 const PAGE_SIZE = 10;
 
+// Points/rewards product: the monetary "Wallet" source is intentionally not
+// offered here (the backend catalog also excludes WALLET reports from listing).
 const SOURCE_OPTIONS = [
   { label: 'All sources', value: '' },
   { label: 'Members', value: 'MEMBERS' },
-  { label: 'Wallet', value: 'WALLET' },
   { label: 'Rewards', value: 'REWARDS' },
   { label: 'Campaigns', value: 'CAMPAIGNS' },
   { label: 'Notifications', value: 'NOTIFICATIONS' },

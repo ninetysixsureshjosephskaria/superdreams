@@ -12,13 +12,15 @@ const CHANNEL_OPTIONS: SelectOption[] = [
   { label: 'Push', value: 'PUSH' },
 ];
 
+// Points/rewards product: the monetary "Wallet" group is intentionally not offered
+// here. The backend still accepts a WALLET group value, so any pre-existing WALLET
+// template remains valid and editable — it is simply not selectable in the UI.
 const GROUP_OPTIONS: SelectOption[] = [
   { label: 'No group', value: '' },
   { label: 'System', value: 'SYSTEM' },
   { label: 'Account', value: 'ACCOUNT' },
   { label: 'Rewards', value: 'REWARDS' },
   { label: 'Campaigns', value: 'CAMPAIGNS' },
-  { label: 'Wallet', value: 'WALLET' },
 ];
 
 const STATUS_OPTIONS: SelectOption[] = [
